@@ -1,6 +1,7 @@
 /*
 
-	uranEngine v1.1.2 
+	uranEngine 
+	Current version: v1.1.3
 	www.uranengine.ru 
 
 */
@@ -989,8 +990,8 @@ function __updateWorld() {
 		WORLD.callback.update();
 	}
 
-	if(MAP && MAP.data.callback) {
-		MAP.data.callback();
+	if(WORLD.map && WORLD.map.data.callback) {
+		WORLD.map.data.callback();
 	}
 
 }
