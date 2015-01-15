@@ -142,7 +142,37 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	});
 
-	onUpdate(function() {
+	// FPS vars
+
+	var frames = 0;
+		startTime = Date.now(), 
+		prevTime = startTime;
+
+	// FPS hud
+
+	var hudFPS = createHud('', {
+		toggle: true,
+		position: [ 10, 780 ],
+		size: 18,
+		color: 'rgba(255,255,255,0.7)'
+	});
+
+	//
+
+	onWorldUpdate(function() {
+
+		// FPS show
+
+		var time = Date.now();
+		frames++;
+		if(time > prevTime+1000) {
+			fps = Math.ceil((frames*1000)/(time-prevTime)*100)/100;
+			prevTime = time;
+			frames = 0;
+     		hudFPS.setText('FPS: ' + fps);
+		}
+
+		//
 
 		if(BIO) {
 			BIO.move('down');
@@ -200,9 +230,9 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Shoot', function(data) {
 
-		if(data.collision.name == 'Asteroid') {
+		if(data.actor.name == 'Asteroid') {
 
-			data.collision.giveDamage(player, SUPER ? 9999 : rnd(20, 50));
+			data.actor.giveDamage(player, SUPER ? 9999 : rnd(20, 50));
 
 			data.object.destroy();
 			SHOOTS.splice(SHOOTS.indexOf(data.object), 1);
@@ -213,7 +243,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Asteroid', function(data) {
 
-		if(data.collision.name == 'Player' && !DEATH) {
+		if(data.actor.name == 'Player' && !DEATH) {
 			
 			playSound('boom.wav');
 
@@ -244,7 +274,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Star', function(data) {
 
-		if(data.collision.name == 'Player' && !DEATH) {
+		if(data.actor.name == 'Player' && !DEATH) {
 
 			data.object.destroy();
 
@@ -258,7 +288,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Bio', function(data) {
 
-		if(data.collision.name == 'Player' && !DEATH) {
+		if(data.actor.name == 'Player' && !DEATH) {
 
 			data.object.destroy();
 
