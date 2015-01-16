@@ -19,6 +19,8 @@ cacheSounds([
 
 createWorld('world', [ 1280, 800 ], function() {
 
+	drawMap('space.png');
+
 	var SHOOTS = [],
 		ASTEROIDS = [],
 		STARS = [],
@@ -45,9 +47,6 @@ createWorld('world', [ 1280, 800 ], function() {
 			health: 260
 		}
 	];
-
-	createMap('space.png');
-	mapAnimate('down', 4);
 
 	var hudScore = createHud('Очки: 0', {
 		toggle: true,
@@ -90,19 +89,19 @@ createWorld('world', [ 1280, 800 ], function() {
 		}
 
 		if(key == KEYS.UP) {
-			player.move('up');
+			player.move([ 0, -1 ]);
 		}
 
 		if(key == KEYS.DOWN) {
-			player.move('down');
+			player.move([ 0, 1 ]);
 		}
 
 		if(key == KEYS.RIGHT) {
-			player.move('right');
+			player.move([ 1, 0 ]);
 		}
 
 		if(key == KEYS.LEFT) {
-			player.move('left');
+			player.move([ -1, 0 ]);
 		}
 
 	});
@@ -119,12 +118,12 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			var position = player.get('position');
 
-			SHOOTS[SHOOTS.length] = createObject('Shoot', {
+			SHOOTS.push(createObject('Shoot', {
 				size: SUPER ? [ 4, 10 ] : [ 2, 4 ],
 				sprite: SUPER ? 'shoot-super.png' : 'shoot.png',
 				position: [ position.x, position.y-61 ],
 				speed: 5
-			});
+			}));
 
 		}
 
@@ -175,30 +174,32 @@ createWorld('world', [ 1280, 800 ], function() {
 
 		//
 
+		moveMap([ 0, 1 ], 4);
+
 		if(BIO) {
-			BIO.move('down');
+			BIO.move([ 0, 1 ]);
 		}
 
 		for(var i in SHOOTS) {
-			SHOOTS[i].move('up');
+			SHOOTS[i].move([ 0, -1 ]);
 		}
 
 		for(var i in ASTEROIDS) {
-			ASTEROIDS[i].move('down');
+			ASTEROIDS[i].move([ 0, 1 ]);
 		}
 
 		for(var i in STARS) {
-			STARS[i].move('down');
+			STARS[i].move([ 0, 1 ]);
 		}
 
 		if(rnd(1, 150) == 1) {
 
-			STARS[STARS.length] = createObject('Star', {
+			STARS.push(createObject('Star', {
 				size: [ 12, 12 ],
 				sprite: 'star.png',
 				position: [ rnd(100, 1180), -5 ],
 				speed: rnd(1, 3)
-			});
+			}));
 
 		}
 
@@ -217,13 +218,13 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			var data = A_DATA[rnd(0, A_DATA.length-1)];
 
-			ASTEROIDS[ASTEROIDS.length] = createObject('Asteroid', {
+			ASTEROIDS.push(createObject('Asteroid', {
 				size: data.size,
 				sprite: data.sprite,
 				position: [ rnd(100, 1180), -(data.size[1]/2-1) ],
 				speed: rnd(1, 3),
 				health: data.health
-			});
+			}));
 
 		}
 		

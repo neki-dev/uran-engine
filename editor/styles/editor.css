@@ -1,0 +1,143 @@
+* {
+	outline: none;
+	margin: 0;
+	border: none;
+	padding: 0;
+}
+
+html,
+body {
+	width: 100%;
+	height: 100%;
+}
+
+body {
+	background: #fff;
+	font: 12px 'Lucida Grande', 'Arial', 'Tahoma', 'Verdana', 'Sans-serif';
+	color: #666;
+	cursor: default;
+}
+
+#field {
+	background: url('../images/workbody.png');
+	position: absolute;
+}
+
+#editor {
+	width: 320px;
+	position: absolute;
+	background: #fafafa;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	box-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+
+#editor .title {
+	padding: 10px 13px;
+	border-bottom: 1px solid #eee;
+	color: #999;
+}
+#editor .title a {
+	text-decoration: none;
+	font-weight: bold;
+	color: #888;
+}
+
+#editor .item {
+	padding: 15px 13px;
+	border-bottom: 1px solid #eee;
+	text-transform: uppercase;
+	font-size: 10px;
+}
+#editor .item b {
+	font-size: 12px;
+	display: block;
+	margin-bottom: 5px;
+}
+
+.submit,
+.submit-upload span {
+	display: inline-block;
+	background: #34495e;
+	color: #fff;
+	padding: 6px 10px;
+	text-align: center;
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+	border-radius: 2px;
+}
+.submit:hover,
+.submit-upload:hover span {
+	cursor: pointer;
+	background: #27ae60;
+}
+.submit.active:hover {
+	background: #e74c3c;
+}
+.submit.gray {
+	background: #95a5a6;
+	display: none;
+}
+.submit.gray:hover {
+	background: #7f8c8d;
+}
+
+.checkbox {
+	margin-top: 7px;
+	overflow: hidden;
+}
+.checkbox input,
+.checkbox span {
+	float: left;
+}
+.checkbox span {
+	margin: 1px 0 0 3px;
+}
+
+.submit-upload {
+	height: 26px;
+}
+.submit-upload span {
+	position: absolute;
+}
+.submit-upload input {
+	opacity: 0;
+	position: absolute;
+	width: 100px;
+	height: 30px;
+	z-index: 2;
+}
+
+input[type='text'],
+#code {
+	display: block;
+	padding: 6px 8px;
+	width: 278px;
+	box-shadow: 1px 1px 1px #e0e0e0 inset;
+	background: #fff;
+	font-style: italic;
+	color: #aaa;
+}
+
+#code {
+	height: 300px;
+	cursor: text;
+	text-transform: none;
+	font-size: 12px;
+	tab-size: 4;
+	font-style: normal;
+	overflow-y: scroll;
+}
+
+.inline {
+	overflow: hidden;
+}
+.inline input {
+	width: 120px;
+	float: left;
+}
+.inline span {
+	margin: 8px 7px;
+	float: left;
+}

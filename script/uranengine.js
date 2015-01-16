@@ -1,7 +1,7 @@
 /*
 
 	uranEngine 
-	Current version: v1.1.3
+	Current version: v1.2.1
 	www.uranengine.ru 
 
 */
@@ -51,7 +51,7 @@ function _element(name) {
 			animated: false,
 			frames: 0,
 			getFrame: 1,
-			pause: 10,
+			pause: 5,
 			update: 0
 		}
 		// ...
@@ -234,29 +234,25 @@ _element.prototype = {
 				_y: (typeof property.position[1] == 'number') ? property.position[1] : this.property.position.y
 			};
 
-			if(this.name != 'Map') {
+			var offset = __getObjectPositionOffset(this, {
+				x: newPosition._x,
+				y: newPosition._y
+			});
 
-				var offset = __getObjectPositionOffset(this, {
-					x: newPosition._x,
-					y: newPosition._y
-				});
+			if((offset.left < 0 || offset.right > WORLD.element.width || offset.top < 0 || offset.bottom > WORLD.element.height) 
+			&& this.property.fasten) {
+				return this;
+			}
 
-				if((offset.left < 0 || offset.right > WORLD.element.width || offset.top < 0 || offset.bottom > WORLD.element.height) 
-				&& this.property.fasten) {
-					return this;
-				}
+			if(__isObjectCollision(this, {
+				x: newPosition._x,
+				y: newPosition._y
+			})) {
+				return this;
+			}
 
-				if(__isObjectCollision(this, {
-					x: newPosition._x,
-					y: newPosition._y
-				})) {
-					return this;
-				}
-
-				if(!this.has()) {
-					return;
-				}
-
+			if(!this.has()) {
+				return;
 			}
 
 			this.property.position = {
@@ -375,7 +371,7 @@ _element.prototype = {
 
 	},
 
-	// Анимация объекта
+	// Устанавливает анимацию объекту
 
 	animate: function(sprite, pause, infinity) {
 
@@ -389,7 +385,7 @@ _element.prototype = {
 				animated: true,
 				frames: Math.floor(WORLD.sprites[sprite].width/this.property.size.width),
 				getFrame: 1,
-				pause: pause,
+				pause: pause || 5,
 				update: 0
 			};
 
@@ -408,51 +404,21 @@ _element.prototype = {
 		}
 
 		var newPosition = {
-			_x: this.property.position.x,
-			_y: this.property.position.y
+			x: this.property.position.x+this.property.speed*method[0],
+			y: this.property.position.y+this.property.speed*method[1]
 		};
-
-		switch(method) {
-
-			case 'left':
-				newPosition._x -= this.property.speed;
-			break;
-
-			case 'right':
-				newPosition._x += this.property.speed;
-			break;
-
-			case 'up':
-				newPosition._y -= this.property.speed;
-			break;
-
-			case 'down':
-				newPosition._y += this.property.speed;
-			break;
-
-			default:
-				console.warn('Указан неизвестный метод движения');
-				return this;
-			break;
-
-		}
 
 		this.set({
 			position: [ 
-				newPosition._x, 
-				newPosition._y 
+				newPosition.x,
+				newPosition.y
 			]
 		});
 
-		if(this.name != 'Map') {
-			EVENTS['move'].call(this, {
-				object: this,
-				position: {
-					x: newPosition._x,
-					y: newPosition._y
-				}
-			});
-		}
+		EVENTS['move'].call(this, {
+			object: this,
+			position: newPosition
+		});
 
 		return this;
 
@@ -470,7 +436,7 @@ function __isObjectCollision(object, position) {
 
 	for(var i in OBJECTS) {
 
-		if(object == OBJECTS[i] || OBJECTS[i].name == 'Map') {
+		if(object == OBJECTS[i]) {
 			continue;
 		}
 
@@ -726,6 +692,8 @@ function createWorld(canvasID, size, callback) {
 		WORLD.element.height = size[1];
 
 		WORLD.canvas.textBaseline = 'middle';
+		WORLD.canvas.lineWidth = 1;
+		WORLD.canvas.strokeStyle = '#ff0000';
 
 		(function loop(){
 			requestAnimFrame(loop);
@@ -837,108 +805,81 @@ function playSound(file) {
 
 // Создание карты
 
-function createMap(sprite) {
+function drawMap(sprite) {
 
-	WORLD.map = createObject('Map', {
-		size: [ WORLD.element.width, WORLD.element.height ],
-		sprite: sprite,
-		position: [ WORLD.element.width/2, WORLD.element.height/2 ]
-	});
-
-	WORLD.map.data.sprite = sprite;
-
-}
-
-// Анимация карты
-
-function mapAnimate(method, speed) {
-
-	if(!WORLD.map) {
+	if(!WORLD.sprites[sprite]) {
+		console.warn('Спрайт ' + sprite + ' не найден в кэше игры');
 		return;
 	}
 
-	speed = ((speed < 1) ? 1 : ((speed > 10) ? 10 : speed));
+	WORLD.map = {
+		sprite: WORLD.sprites[sprite],
+		position: [
+			[ 0, 0 ]
+		]
+	};
 
-	var movePosition = [ 0, 0 ],
-		repeatPosition = [],
-		moveDelay = 5;
+	WORLD.map.update = function() {
 
-	switch(method) {
+		for(var i = 0; i < 2; ++i) {
 
-		case 'left':
-			movePosition = [ WORLD.element.width + (WORLD.element.width/2 - moveDelay), WORLD.element.height/2 ];
-			repeatPosition = [ WORLD.element.width + WORLD.element.width/2, WORLD.element.height/2 ];
-		break;
+			if(WORLD.map.position[i]) {
+				WORLD.canvas.drawImage(
+					WORLD.map.sprite, 0, 0,
+					WORLD.element.width-WORLD.map.position[i][0], 
+					WORLD.element.height-WORLD.map.position[i][1],
+					WORLD.map.position[i][0], 
+					WORLD.map.position[i][1],
+					WORLD.element.width-WORLD.map.position[i][0], 
+					WORLD.element.height-WORLD.map.position[i][1]
+				);
+			}
 
-		case 'right':
-			movePosition = [ -(WORLD.element.width/2 - moveDelay), WORLD.element.height/2 ];
-			repeatPosition = [ -WORLD.element.width/2, WORLD.element.height/2 ];
-		break;
-
-		case 'up':
-			movePosition = [ WORLD.element.width/2, WORLD.element.height + (WORLD.element.height/2 - moveDelay) ];
-			repeatPosition = [ WORLD.element.width/2, WORLD.element.height + WORLD.element.height/2 ];
-		break;
-
-		case 'down':
-			movePosition = [ WORLD.element.width/2, -(WORLD.element.height/2 - moveDelay) ];
-			repeatPosition = [ WORLD.element.width/2, -WORLD.element.height/2 ];
-		break;
-
-		default:
-			return console.warn('Указан неизвестный метод движения карты');
-		break;
-
-	}
-
-	WORLD.map.set({
-		speed: speed
-	});
-
-	if(WORLD.map.data.repeat) {
-		WORLD.map.data.repeat.set({
-			position: repeatPosition,
-			speed: speed
-		});
-	} else {
-		WORLD.map.data.repeat = createObject('Map', {
-			size: [ WORLD.element.width, WORLD.element.height ],
-			sprite: WORLD.map.data.sprite,
-			position: repeatPosition,
-			speed: speed
-		});
-	}
-
-	WORLD.map.data.callback = function() {
-
-		WORLD.map.move(method);
-		WORLD.map.data.repeat.move(method);
-
-		if(!WORLD.map.isVisible()){
-			WORLD.map.set({
-				position: movePosition
-			});
-		}
-
-		if(!WORLD.map.data.repeat.isVisible()){
-			WORLD.map.data.repeat.set({
-				position: movePosition
-			});
 		}
 
 	}
 
 }
 
-// Остановка карты
+// Движение карты
 
-function mapStop() {
+function moveMap(method, speed) {
 
 	if(!WORLD.map) {
 		return;
 	}
 
-	delete WORLD.map.data.callback;
+	if(!WORLD.map.position[1]) {
+		if(method[0] < 0) {
+			WORLD.map.position[1] = [ WORLD.element.width, 0 ];
+		} else if(method[0] > 0) {
+			WORLD.map.position[1] = [ -WORLD.element.width, 0 ];
+		} else if(method[1] < 0) {
+			WORLD.map.position[1] = [ 0, WORLD.element.height ];
+		} else if(method[1] > 0) {
+			WORLD.map.position[1] = [ 0, -WORLD.element.height ];
+		}
+	}
+
+	for(var i = 0; i < 2; ++i) {
+		WORLD.map.position[i][0] += speed * method[0];
+		WORLD.map.position[i][1] += speed * method[1];
+	}
+
+	for(var i = 0; i < 2; ++i) {
+		if(WORLD.map.position[i][0]+WORLD.element.width <= 0) {
+			WORLD.map.position[i][0] = WORLD.element.width;
+		}
+		if(WORLD.map.position[i][0] >= WORLD.element.width) {
+			WORLD.map.position[i][0] = -WORLD.element.width;
+		}
+		if(WORLD.map.position[i][1]+WORLD.element.height <= 0) {
+			WORLD.map.position[i][1] = WORLD.element.height;
+		}
+		if(WORLD.map.position[i][1] >= WORLD.element.height) {
+			WORLD.map.position[i][1] = -WORLD.element.height;
+		}
+	}
 
 }
 
@@ -950,13 +891,15 @@ function __updateWorld() {
 
 	WORLD.canvas.clearRect(0, 0, WORLD.element.width, WORLD.element.height);
 
+	if(WORLD.map) {
+		WORLD.map.update();
+	}
+
 	for(var i in OBJECTS) {
 
-		if(OBJECTS[i].name != 'Map') {
-			EVENTS['update'].call(OBJECTS[i], {
-				object: OBJECTS[i]
-			});
-		}
+		EVENTS['update'].call(OBJECTS[i], {
+			object: OBJECTS[i]
+		});
 
 		if(!OBJECTS[i].isVisible()) {
 			continue;
@@ -1006,8 +949,6 @@ function __updateWorld() {
 		} else if(OBJECTS[i].property.polygons.length > 2) {
 
 			WORLD.canvas.beginPath();
-			WORLD.canvas.lineWidth = 1;
-			WORLD.canvas.strokeStyle = '#ff0000';
 
 			for(var k = 0; k < OBJECTS[i].data.polygons.length-1; ++k) {
 				WORLD.canvas.moveTo(
@@ -1049,10 +990,6 @@ function __updateWorld() {
 
 	if(WORLD.callback.update) {
 		WORLD.callback.update();
-	}
-
-	if(WORLD.map && WORLD.map.data.callback) {
-		WORLD.map.data.callback();
 	}
 
 }
@@ -1388,10 +1325,6 @@ window.onclick = function(event) {
 	if(keyController.callback.clickObject) {
 		
 		for(var i in OBJECTS) {
-
-			if(OBJECTS[i].name == 'Map') {
-				continue;
-			}
 
 			if(__isPositionInPolygon(event.pageX, event.pageY, OBJECTS[i])) {
 
