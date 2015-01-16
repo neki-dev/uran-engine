@@ -76,11 +76,12 @@ createWorld('world', [ 1280, 800 ], function() {
 			[  40,  92 ],
 			[   0,  78 ]
 		],
-		sprite: 'player.png',
 		position: [ 640, 600 ],
 		speed: 3,
-		attach: true
+		fasten: true
 	}).specifyPlayer();
+
+	player.animate('player.png', 5, true);
 
 	onKeyHas(function(key) {
 
@@ -121,7 +122,7 @@ createWorld('world', [ 1280, 800 ], function() {
 			SHOOTS[SHOOTS.length] = createObject('Shoot', {
 				size: SUPER ? [ 4, 10 ] : [ 2, 4 ],
 				sprite: SUPER ? 'shoot-super.png' : 'shoot.png',
-				position: [ position.left, position.top-61 ],
+				position: [ position.x, position.y-61 ],
 				speed: 5
 			});
 
@@ -247,9 +248,7 @@ createWorld('world', [ 1280, 800 ], function() {
 			
 			playSound('boom.wav');
 
-			player.set({
-				sprite: 'death.png'
-			});
+			player.animate('death.png', 2);
 
 			DEATH = true;
 
