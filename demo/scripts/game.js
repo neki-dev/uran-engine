@@ -34,17 +34,51 @@ createWorld('world', [ 1280, 800 ], function() {
 		{
 			sprite: 'asteroid-small.png',
 			size: [ 80, 70 ],
-			health: 100
+			health: 100,
+			polygons: [
+				[ 59, 1 ],
+				[ 77, 29 ],
+				[ 79, 50 ],
+				[ 50, 69 ],
+				[ 2, 49 ],
+				[ 18, 22 ],
+				[ 12, 12 ],
+				[ 24, 6 ],
+				[ 28, 12 ]
+			]
 		},
 		{
 			sprite: 'asteroid-medium.png',
 			size: [ 100, 113 ],
-			health: 180
+			health: 180,
+			polygons: [
+				[ 37, 1 ],
+				[ 87, 11 ],
+				[ 96, 30 ],
+				[ 99, 83 ],
+				[ 83, 110 ],
+				[ 34, 110 ],
+				[ 5, 87 ],
+				[ 14, 52 ],
+				[ 1, 28 ],
+				[ 5, 13 ]
+			]
 		},
 		{
 			sprite: 'asteroid-big.png',
 			size: [ 130, 117 ],
-			health: 260
+			health: 260,
+			polygons: [
+				[ 37, 1 ],
+				[ 93, 11 ],
+				[ 129, 43 ],
+				[ 104, 108 ],
+				[ 72, 116 ],
+				[ 39, 95 ],
+				[ 22, 100 ],
+				[ 2, 81 ],
+				[ 4, 40 ]
+			]
 		}
 	];
 
@@ -80,7 +114,7 @@ createWorld('world', [ 1280, 800 ], function() {
 		fasten: true
 	}).specifyPlayer();
 
-	player.animate('player.png', 5, true);
+	player.animate('player.png', 5, 5, true);
 
 	onKeyHas(function(key) {
 
@@ -219,10 +253,10 @@ createWorld('world', [ 1280, 800 ], function() {
 			var data = A_DATA[rnd(0, A_DATA.length-1)];
 
 			ASTEROIDS.push(createObject('Asteroid', {
-				size: data.size,
 				sprite: data.sprite,
 				position: [ rnd(100, 1180), -(data.size[1]/2-1) ],
 				speed: rnd(1, 3),
+				polygons: data.polygons,
 				health: data.health
 			}));
 
@@ -249,7 +283,7 @@ createWorld('world', [ 1280, 800 ], function() {
 			
 			playSound('boom.wav');
 
-			player.animate('death.png', 2);
+			player.animate('death.png', 5, 2);
 
 			DEATH = true;
 

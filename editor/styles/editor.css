@@ -61,7 +61,7 @@ body {
 	display: inline-block;
 	background: #34495e;
 	color: #fff;
-	padding: 6px 10px;
+	padding: 5px 9px;
 	text-align: center;
 	-moz-border-radius: 2px;
 	-webkit-border-radius: 2px;
@@ -96,17 +96,21 @@ body {
 }
 
 .submit-upload {
-	height: 26px;
+	margin-bottom: 3px;
+	height: 21px;
 }
 .submit-upload span {
 	position: absolute;
+	z-index: 1;
 }
 .submit-upload input {
 	opacity: 0;
 	position: absolute;
 	width: 100px;
-	height: 30px;
 	z-index: 2;
+}
+.submit-upload input:hover {
+	cursor: pointer;
 }
 
 input[type='text'],

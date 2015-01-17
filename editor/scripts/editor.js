@@ -228,6 +228,9 @@ $(function() {
 				$('#data-width').val(OBJECT_DATA.sprite.width);
 				$('#data-height').val(OBJECT_DATA.sprite.height);
 
+				POINTS = [];
+				LASTPOINT = [];
+
 				__updateCode();
 
         	}
