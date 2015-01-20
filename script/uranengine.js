@@ -1,27 +1,23 @@
 /*
 
 	uranEngine 
-	Current version: v1.3.0
+	Current version: v1.4.0
 	www.uranengine.ru 
 
 */
 
 /*
-**
+**	Константы
 */
 
-window.requestAnimFrame = (function() {
+var CONST = {
 
-	return window.requestAnimationFrame || 
-	window.webkitRequestAnimationFrame || 
-	window.mozRequestAnimationFrame || 
-	window.oRequestAnimationFrame || 
-	window.msRequestAnimationFrame || 
-	function(callback) {
-		window.setTimeout(callback, 1000/60);
-	};
+	RAD: Math.PI / 180,
+	DEG: 180 / Math.PI,
+	FRAMES: 60,
+	DEBUG: true
 
-})();
+};
 
 /*
 **	Массив объектов
@@ -39,7 +35,10 @@ function _element(name) {
 	this.id = new Date().getTime();
 
 	this.data = {
-		polygons: [],
+		polygons: {
+			save: [],
+			full: []
+		},
 		collision: [],
 		offset: {
 			left: 0,
@@ -65,7 +64,10 @@ function _element(name) {
 		sprite: null,
 		health: 100,
 		collision: false,
-		speed: 2,
+		velocity: {
+			x: 2,
+			y: 2
+		},
 		polygons: [],
 		position: {
 			x: 0,
@@ -130,17 +132,14 @@ _element.prototype = {
 
 		if(typeof property.size == 'object') {
 
-			var prevSize = {
-				_width: this.property.size.width,
-				_height: this.property.size.height
-			}
+			var prevSize = this.property.size;
 
 			this.property.size = {
-				width: property.size[0] || this.property.size.width,
-				height: property.size[1] || this.property.size.height
+				width: (typeof property.size.width == 'number') ? property.size.width : this.property.size.width,
+				height: (typeof property.size.height == 'number') ? property.size.height : this.property.size.height
 			};
 
-			if(!this.property.polygons.length) {	
+			if(!this.data.polygons.save.length) {
 
 				this.set({
 					polygons: [
@@ -151,16 +150,18 @@ _element.prototype = {
 					]
 				});
 
-			} else if(this.property.size.width != prevSize._width || this.property.size.height != prevSize._height) {
+			} else if(this.property.size.width != prevSize.width || this.property.size.height != prevSize.height) {
 
-				for(var k = 0; k < this.property.polygons.length; ++k) {
+				for(var k in this.data.polygons.save) {
 
-					this.property.polygons[k] = [
-						this.property.polygons[k][0] / prevSize._width * this.property.size.width,
-						this.property.polygons[k][1] / prevSize._height * this.property.size.height
+					this.data.polygons.full[k] = this.data.polygons.save[k] = [
+						this.data.polygons.save[k][0] / prevSize.width * this.property.size.width,
+						this.data.polygons.save[k][1] / prevSize.height * this.property.size.height
 					];
 
 				}
+
+				this.data.polygons.full[this.property.polygons.length] = this.data.polygons.full[0];
 
 			}
 
@@ -176,28 +177,22 @@ _element.prototype = {
 				console.warn('Количество полигонов не может быть меньше трех');
 			} else {
 
-				this.data.polygons = this.property.polygons = property.polygons;
-				this.data.polygons.push(this.data.polygons[0]);
-
 				if(this.property.size.width == 0 && this.property.size.height == 0) {
 
-					var size = [ 0, 0 ];
-
-					for(var k = 0; k < property.polygons.length; ++k) {
-						size = [
-							(size[0] < property.polygons[k][0]) ? property.polygons[k][0] : size[0],
-							(size[1] < property.polygons[k][1]) ? property.polygons[k][1] : size[1]
-						];
+					for(var k in property.polygons) {
+						this.property.size = {
+							width: (this.property.size.width < property.polygons[k][0]) ? property.polygons[k][0] : this.property.size.width,
+							height: (this.property.size.height < property.polygons[k][1]) ? property.polygons[k][1] : this.property.size.height
+						};
 					}
-					
-					this.property.size = {
-						width: size[0],
-						height: size[1]
-					};
 
 					__updateOffset(this);
 
 				}
+
+				this.property.polygons = property.polygons;
+
+				__updatePolygons(this);
 
 			}
 
@@ -207,22 +202,16 @@ _element.prototype = {
 
 		if(typeof property.angle == 'number') {
 
-			this.property.angle = property.angle;
-			this.data.angle = this.property.angle * (Math.PI / 180);
-
-			var center = this.property.position;
-
-			for(var k = 0; k < this.property.polygons.length; ++k) {
-
-				var xTemp = this.property.polygons[k][0] - this.property.size.width / 2;
-				var yTemp = this.property.polygons[k][1] - this.property.size.height / 2;
-
-				this.property.polygons[k] = [
-					(this.property.size.width / 2) + (xTemp * Math.cos(this.data.angle) - yTemp * Math.sin(this.data.angle)),
-					(this.property.size.height / 2) + (xTemp * Math.sin(this.data.angle) + yTemp * Math.cos(this.data.angle))
-				];
-
+			if(property.angle > 360) {
+				property.angle -= 360;
+			} else if(property.angle < -360) {
+				property.angle += 360;
 			}
+
+			this.property.angle = property.angle;
+			this.data.angle = property.angle * -CONST.RAD;
+
+			__updatePolygons(this);
 
 		}
 
@@ -278,9 +267,19 @@ _element.prototype = {
 
 		// Установка скорости объекта
 
-		if(typeof property.speed == 'number') {
+		if(typeof property.velocity == 'object') {
+		
+			this.property.velocity = {
+				x: (typeof property.velocity.x == 'number') ? property.velocity.x : this.property.velocity.x,
+				y: (typeof property.velocity.y == 'number') ? property.velocity.y : this.property.velocity.y
+			};
 
-			this.property.speed = ((property.speed < 1) ? 1 : ((property.speed > 10) ? 10 : property.speed));
+		} else if(typeof property.velocity == 'number') {
+		
+			this.property.velocity = {
+				x: property.velocity,
+				y: property.velocity
+			};
 
 		}
 
@@ -289,8 +288,8 @@ _element.prototype = {
 		if(typeof property.position == 'object') {
 
 			var newPosition = {
-				_x: (typeof property.position[0] == 'number') ? property.position[0] : this.property.position.x,
-				_y: (typeof property.position[1] == 'number') ? property.position[1] : this.property.position.y
+				_x: (typeof property.position.x == 'number') ? property.position.x : this.property.position.x,
+				_y: (typeof property.position.y == 'number') ? property.position.y : this.property.position.y
 			};
 
 			var offset = __getObjectPositionOffset(this, {
@@ -299,14 +298,14 @@ _element.prototype = {
 			});
 
 			if(this.property.fasten) {
-			
-				for(var k = 0; k < this.property.polygons.length; ++k) {
+
+				for(var k in this.data.polygons.save) {
 
 					if(
-						offset.left + this.property.polygons[k][0] < 0 || 
-						offset.left + this.property.polygons[k][0] > WORLD.element.width || 
-						offset.top + this.property.polygons[k][1] < 0 || 
-						offset.top + this.property.polygons[k][1] > WORLD.element.height
+						offset.left + this.data.polygons.save[k][0] < 0 || 
+						offset.left + this.data.polygons.save[k][0] > WORLD.element.width || 
+						offset.top + this.data.polygons.save[k][1] < 0 || 
+						offset.top + this.data.polygons.save[k][1] > WORLD.element.height
 					) {
 						return this;
 					}
@@ -452,10 +451,10 @@ _element.prototype = {
 			
 			this.data.animate = {
 				sprite: WORLD.sprites[sprite],
-				infinity: infinity,
+				infinity: (typeof pause == 'boolean') ? pause : infinity,
 				animated: true,
 				getFrame: 1,
-				pause: pause || 5,
+				pause: (typeof pause == 'number') ? pause : this.data.animate.pause,
 				update: 0,
 				frames: frames
 			};
@@ -466,30 +465,41 @@ _element.prototype = {
 
 	},
 
-	// Передвижение объекта
+	// Передвижение объекта по углу
 
-	move: function(method) {
+	move: function(angle) {
 
 		if(!this.has()) {
 			return;
 		}
 
 		var newPosition = {
-			x: this.property.position.x + this.property.speed*method[0],
-			y: this.property.position.y + this.property.speed*method[1]
+			x: this.property.position.x + this.property.velocity.x * Math.cos(angle * -CONST.RAD),
+			y: this.property.position.y + this.property.velocity.y * Math.sin(angle * -CONST.RAD)
 		};
 
 		this.set({
-			position: [ 
-				newPosition.x,
-				newPosition.y
-			]
+			position: newPosition
 		});
 
 		EVENTS['move'].call(this, {
 			object: this,
 			position: newPosition
 		});
+
+		return this;
+
+	},
+
+	// Передвижение объекта по координатам
+
+	moveTo: function(x, y) {
+
+		if(!this.has()) {
+			return;
+		}
+
+		this.move(anglePoint(this.property.position.x, this.property.position.y, x, y));
 
 		return this;
 
@@ -528,10 +538,12 @@ function __isObjectCollision(object, position) {
 					});
 				}
 
-				EVENTS['collision'].call(object, {
-					object: object,
-					actor: OBJECTS[i]
-				});
+				if(object.has() && OBJECTS[i].has()) {
+					EVENTS['collision'].call(object, {
+						object: object,
+						actor: OBJECTS[i]
+					});
+				}
 
 			}
 
@@ -571,18 +583,18 @@ function __isPositionInObject(position, getObject, object) {
 		return false;
 	}
 
-	for(var k = 0; k < object.data.polygons.length - 1; ++k) {
+	for(var k = 0; k < object.data.polygons.full.length - 1; ++k) {
 
-		if(__isPositionInPolygon(offset.left + object.data.polygons[k][0], offset.top + object.data.polygons[k][1], getObject)) {
+		if(__isPositionInPolygon(offset.left + object.data.polygons.full[k][0], offset.top + object.data.polygons.full[k][1], getObject)) {
 			return true;
 		}
 
 		if(__isLineIntersectObject([
-			offset.left + object.data.polygons[k][0], 
-			offset.top + object.data.polygons[k][1]
+			offset.left + object.data.polygons.full[k][0], 
+			offset.top + object.data.polygons.full[k][1]
 		], [
-			offset.left + object.data.polygons[k + 1][0], 
-			offset.top + object.data.polygons[k + 1][1]
+			offset.left + object.data.polygons.full[k + 1][0], 
+			offset.top + object.data.polygons.full[k + 1][1]
 		], getObject)) {
 			return true;
 		}
@@ -591,22 +603,31 @@ function __isPositionInObject(position, getObject, object) {
 
 	function __isLineIntersectObject(A_start, A_end, _object) {
 
-		for(var k = 0; k < _object.data.polygons.length - 1; ++k) {
+		for(var k = 0; k < _object.data.polygons.full.length - 1; ++k) {
 
 			var B_start = [
-					_object.data.offset.left + _object.data.polygons[k][0], 
-					_object.data.offset.top + _object.data.polygons[k][1]
+					_object.data.offset.left + _object.data.polygons.full[k][0], 
+					_object.data.offset.top + _object.data.polygons.full[k][1]
 				],
 				B_end = [
-					_object.data.offset.left + _object.data.polygons[k + 1][0], 
-					_object.data.offset.top + _object.data.polygons[k + 1][1]
+					_object.data.offset.left + _object.data.polygons.full[k + 1][0], 
+					_object.data.offset.top + _object.data.polygons.full[k + 1][1]
 				];
 
 			if(
-				(((B_end[0] - B_start[0]) * (A_start[1] - B_start[1]) - (B_end[1] - B_start[1]) * (A_start[0] - B_start[0])) *
+
+				((B_start[1] - B_end[1]) * A_start[0] +
+				(B_end[0] - B_start[0]) * A_start[1] +
+				(B_start[0] * B_end[1] - B_end[0] * B_start[1]) == 0 ||
+				(B_start[1] - B_end[1]) * A_end[0] +
+				(B_end[0] - B_start[0]) * A_end[1] +
+				(B_start[0] * B_end[1] - B_end[0] * B_start[1]) == 0) ||
+
+				((((B_end[0] - B_start[0]) * (A_start[1] - B_start[1]) - (B_end[1] - B_start[1]) * (A_start[0] - B_start[0])) *
 				((B_end[0] - B_start[0]) * (A_end[1] - B_start[1]) - (B_end[1] - B_start[1]) * (A_end[0] - B_start[0]))) < 0 && 
 				(((A_end[0] - A_start[0]) * (B_start[1] - A_start[1]) - (A_end[1] - A_start[1]) * (B_start[0] - A_start[0])) *
-				((A_end[0] - A_start[0]) * (B_end[1] - A_start[1]) - (A_end[1] - A_start[1]) * (B_end[0] - A_start[0]))) < 0
+				((A_end[0] - A_start[0]) * (B_end[1] - A_start[1]) - (A_end[1] - A_start[1]) * (B_end[0] - A_start[0]))) < 0)
+
 			) {
 				return true;
 			}
@@ -627,15 +648,15 @@ function __isPositionInPolygon(_x, _y, _object) {
 		x = [],
 		y = [];
 
-	for(var i = 0, j = _object.property.polygons.length - 1; i < _object.property.polygons.length; j = i++) {
+	for(var i = 0, j = _object.data.polygons.save.length - 1; i < _object.data.polygons.save.length; j = i++) {
 
 		x = [
-			_object.data.offset.left + _object.property.polygons[i][0],
-			_object.data.offset.left + _object.property.polygons[j][0]
+			_object.data.offset.left + _object.data.polygons.save[i][0],
+			_object.data.offset.left + _object.data.polygons.save[j][0]
 		];
 		y = [
-			_object.data.offset.top + _object.property.polygons[i][1],
-			_object.data.offset.top + _object.property.polygons[j][1]
+			_object.data.offset.top + _object.data.polygons.save[i][1],
+			_object.data.offset.top + _object.data.polygons.save[j][1]
 		];
 
 		if(((y[0] > _y) != (y[1] > _y)) && (_x < (x[1] - x[0]) * (_y - y[0]) / (y[1] - y[0]) + x[0])) {
@@ -667,6 +688,27 @@ function __updateOffset(object) {
 		top: object.property.position.y - object.property.size.height / 2,
 		bottom: object.property.position.y + object.property.size.height / 2
 	};
+
+}
+
+function __updatePolygons(object) {
+
+	var sin = Math.sin(object.data.angle),
+		cos = Math.cos(object.data.angle);
+
+	for(var k in object.property.polygons) {
+
+		var xTemp = object.property.polygons[k][0] - object.property.size.width / 2,
+			yTemp = object.property.polygons[k][1] - object.property.size.height / 2;
+
+		object.data.polygons.full[k] = object.data.polygons.save[k] = [
+			(object.property.size.width / 2) + (xTemp * cos - yTemp * sin),
+			(object.property.size.height / 2) + (xTemp * sin + yTemp * cos)
+		];
+
+	}
+
+	object.data.polygons.full[object.property.polygons.length] = object.data.polygons.full[0];
 
 }
 
@@ -719,6 +761,14 @@ function onLeave(target, callback) {
 function onUpdate(target, callback) {
 
 	EVENTS['update'].addCallback(target, callback);
+
+}
+
+// Событие клика по объекту
+
+function onClicked(target, callback) {
+
+	EVENTS['clicked'].addCallback(target, callback);
 
 }
 
@@ -914,27 +964,33 @@ function drawMap(sprite) {
 
 // Движение карты
 
-function moveMap(method, speed) {
+function moveMap(angle, speed) {
 
 	if(!WORLD.map) {
 		return;
 	}
 
 	if(!WORLD.map.position[1]) {
-		if(method[0] < 0) {
+		if(angle == 180) {
 			WORLD.map.position[1] = [ WORLD.element.width, 0 ];
-		} else if(method[0] > 0) {
+		} else if(angle == 0) {
 			WORLD.map.position[1] = [ -WORLD.element.width, 0 ];
-		} else if(method[1] < 0) {
+		} else if(angle == 90) {
 			WORLD.map.position[1] = [ 0, WORLD.element.height ];
-		} else if(method[1] > 0) {
+		} else if(angle == 270) {
 			WORLD.map.position[1] = [ 0, -WORLD.element.height ];
+		} else {
+			console.warn('');
+			return;
 		}
 	}
 
+	var sin = Math.sin(angle * -CONST.RAD),
+		cos = Math.cos(angle * -CONST.RAD);
+
 	for(var i = 0; i < 2; ++i) {
-		WORLD.map.position[i][0] += speed * method[0];
-		WORLD.map.position[i][1] += speed * method[1];
+		WORLD.map.position[i][0] += speed * cos;
+		WORLD.map.position[i][1] += speed * sin;
 	}
 
 	for(var i = 0; i < 2; ++i) {
@@ -966,11 +1022,17 @@ function __updateWorld() {
 		WORLD.map.update();
 	}
 
+	WORLD.canvas.beginPath();
+
 	for(var i in OBJECTS) {
 
 		EVENTS['update'].call(OBJECTS[i], {
 			object: OBJECTS[i]
 		});
+
+	}
+
+	for(var i in OBJECTS) {
 
 		if(!OBJECTS[i].isVisible() || OBJECTS[i].property.size.width == 0 || OBJECTS[i].property.size.height == 0) {
 			continue;
@@ -1024,26 +1086,24 @@ function __updateWorld() {
 		WORLD.canvas.rotate(-OBJECTS[i].data.angle);
 		WORLD.canvas.translate(-OBJECTS[i].property.position.x, -OBJECTS[i].property.position.y);
 
-		if(OBJECTS[i].data.polygons.length > 2 && !OBJECTS[i].data.animate.animated && !OBJECTS[i].property.sprite) {
+		if(OBJECTS[i].data.polygons.full.length > 2 && CONST.DEBUG) {
 
-			WORLD.canvas.beginPath();
-
-			for(var k = 0; k < OBJECTS[i].data.polygons.length - 1; ++k) {
+			for(var k = 0; k < OBJECTS[i].data.polygons.full.length - 1; ++k) {
 				WORLD.canvas.moveTo(
-					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons[k][0], 
-					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons[k][1]
+					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons.full[k][0], 
+					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons.full[k][1]
 				);
 				WORLD.canvas.lineTo(
-					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons[k + 1][0], 
-					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons[k + 1][1]
+					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons.full[k + 1][0], 
+					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons.full[k + 1][1]
 				);
 			}
-
-			WORLD.canvas.stroke();
 
 		}
 
 	}
+
+	WORLD.canvas.stroke();
 
 	for(var i in HUD) {
 
@@ -1058,12 +1118,12 @@ function __updateWorld() {
 
 	}
 
-	for(var key in keyController.has) {
-
-		if(keyController.has[key] && keyController.callback.has) {
-			keyController.callback.has(key);
+	if(keyController.callback.has) {
+		for(var i in keyController.has) {
+			if(keyController.has[i]) {
+				keyController.callback.has(i);
+			}
 		}
-
 	}
 
 	if(WORLD.callback.update) {
@@ -1175,15 +1235,19 @@ _event.prototype = {
 **	Добавление событий
 */
 
-var eventList = [
-	'move', 'collision', 'death', 'enter', 'leave', 'update'
+var EVENT_LIST = [
+	'move', 
+	'collision', 
+	'death', 
+	'enter', 
+	'leave', 
+	'update', 
+	'clicked'
 ];
 
-for(var i = 0; i < eventList.length; ++i) {
-	new _event(eventList[i]);
+for(var i in EVENT_LIST) {
+	new _event(EVENT_LIST[i]);
 }
-
-delete eventList;
 
 /*
 **	Массив HUD
@@ -1281,8 +1345,8 @@ _hud.prototype = {
 		if(typeof property.position == 'object') {
 
 			this.property.position = {
-				x: (typeof property.position[0] == 'number') ? property.position[0] : this.property.position.x,
-				y: (typeof property.position[1] == 'number') ? property.position[1] : this.property.position.y
+				x: (typeof property.position.x == 'number') ? property.position.x : this.property.position.x,
+				y: (typeof property.position.y == 'number') ? property.position.y : this.property.position.y
 			};
 			
 		}
@@ -1351,8 +1415,8 @@ var keyController = {
 		has: null,
 		down: null,
 		up: null,
-		clickObject: null,
-		click: null
+		click: null,
+		move: null
 	}
 
 };
@@ -1360,6 +1424,17 @@ var keyController = {
 /*
 **	Контроллер клавиш
 */
+
+window.onmousemove = function(event) {
+
+	if(keyController.callback.move) {
+		keyController.callback.move({
+			x: event.pageX,
+			y: event.pageY
+		});
+	}
+
+}
 
 window.onkeydown = function(event) {
 
@@ -1400,21 +1475,17 @@ window.onclick = function(event) {
 		});
 	}
 
-	if(keyController.callback.clickObject) {
-		
-		for(var i in OBJECTS) {
+	for(var i in OBJECTS) {
 
-			if(__isPositionInPolygon(event.pageX, event.pageY, OBJECTS[i])) {
+		if(__isPositionInPolygon(event.pageX, event.pageY, OBJECTS[i])) {
 
-				keyController.callback.clickObject({
-					object: OBJECTS[i],
-					position: {
-						x: event.pageX,
-						y: event.pageY
-					}
-				});
-
-			}
+			EVENTS['clicked'].call(OBJECTS[i], {
+				object: OBJECTS[i],
+				position: {
+					x: event.pageX,
+					y: event.pageY
+				}
+			});
 
 		}
 
@@ -1458,11 +1529,11 @@ function onClicked(callback) {
 
 }
 
-// Событие клика по объекту
+// Событие движения мышки
 
-function onClickedObject(callback) {
+function onMouseMove(callback) {
 
-	keyController.callback.clickObject = callback;
+	keyController.callback.move = callback;
 
 }
 
@@ -1481,5 +1552,46 @@ function __isGameKey(code) {
 	}
 
 	return false;
+
+}
+
+/*
+**	Рендеринг
+*/
+
+window.requestAnimFrame = (function() {
+
+	return window.requestAnimationFrame || 
+	window.webkitRequestAnimationFrame || 
+	window.mozRequestAnimationFrame || 
+	window.oRequestAnimationFrame || 
+	window.msRequestAnimationFrame || 
+	function(callback) {
+		window.setTimeout(callback, 1000 / CONST.FRAMES);
+	};
+
+})();
+
+/*
+**	Прочие системные функции
+*/
+
+function random(min, max) {
+
+	return Math.round(min - 0.5 + Math.random() * (max - min + 1));
+
+}
+
+function vectorLength(a, b) {
+
+	return Math.sqrt(Math.pow((b.x || b[0]) - (a.x || a[0]), 2) + Math.pow((b.y || b[1]) - (a.y || a[1]), 2));
+
+}
+
+function anglePoint(fromX, fromY, x, y) {
+
+	var angle = Math.atan2(fromY - y, x - fromX) * CONST.DEG;
+
+	return (angle < 0) ? angle + 360 : angle;
 
 }

@@ -21,10 +21,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	drawMap('space.png');
 
-	var SHOOTS = [],
-		ASTEROIDS = [],
-		STARS = [],
-		DEATH = false,
+	var DEATH = false,
 		SCORE = 0,
 		SUPER = false,
 		BIO,
@@ -33,7 +30,7 @@ createWorld('world', [ 1280, 800 ], function() {
 	var A_DATA = [
 		{
 			sprite: 'asteroid-small.png',
-			size: [ 80, 70 ],
+			height: 70,
 			health: 100,
 			polygons: [
 				[ 59, 1 ],
@@ -49,7 +46,7 @@ createWorld('world', [ 1280, 800 ], function() {
 		},
 		{
 			sprite: 'asteroid-medium.png',
-			size: [ 100, 113 ],
+			height: 113,
 			health: 180,
 			polygons: [
 				[ 37, 1 ],
@@ -66,7 +63,7 @@ createWorld('world', [ 1280, 800 ], function() {
 		},
 		{
 			sprite: 'asteroid-big.png',
-			size: [ 130, 117 ],
+			height: 117,
 			health: 260,
 			polygons: [
 				[ 37, 1 ],
@@ -84,13 +81,19 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	var hudScore = createHud('Очки: 0', {
 		toggle: true,
-		position: [ 10, 24 ],
+		position: {
+			x: 10,
+			y: 24
+		},
 		size: 22,
 		bold: true
 	});
 
 	var hudSuper = createHud({
-		position: [ 10, 54 ],
+		position: {
+			x: 10,
+			y: 54
+		},
 		size: 22,
 		bold: true
 	});
@@ -109,8 +112,11 @@ createWorld('world', [ 1280, 800 ], function() {
 			[  40,  92 ],
 			[   0,  78 ]
 		],
-		position: [ 640, 600 ],
-		speed: 3,
+		position: {
+			x: 640,
+			y: 600
+		},
+		velocity: 3,
 		fasten: true
 	}).specifyPlayer();
 
@@ -123,19 +129,19 @@ createWorld('world', [ 1280, 800 ], function() {
 		}
 
 		if(key == KEYS.UP) {
-			player.move([ 0, -1 ]);
+			player.move(90);
 		}
 
 		if(key == KEYS.DOWN) {
-			player.move([ 0, 1 ]);
+			player.move(270);
 		}
 
 		if(key == KEYS.RIGHT) {
-			player.move([ 1, 0 ]);
+			player.move(0);
 		}
 
 		if(key == KEYS.LEFT) {
-			player.move([ -1, 0 ]);
+			player.move(180);
 		}
 
 	});
@@ -152,12 +158,21 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			var position = player.get('position');
 
-			SHOOTS.push(createObject('Shoot', {
-				size: SUPER ? [ 4, 10 ] : [ 2, 4 ],
+			createObject('Shoot', {
+				size: (SUPER ? { 
+					width: 4, 
+					height: 10 
+				} : { 
+					width: 2, 
+					height: 4 
+				}),
 				sprite: SUPER ? 'shoot-super.png' : 'shoot.png',
-				position: [ position.x, position.y-61 ],
-				speed: 5
-			}));
+				position: {
+					x: position.x,
+					y: position.y - 61
+				},
+				velocity: 5
+			});
 
 		}
 
@@ -186,12 +201,42 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	var hudFPS = createHud('', {
 		toggle: true,
-		position: [ 10, 780 ],
+		position: {
+			x: 10,
+			y: 780
+		},
 		size: 18,
 		color: 'rgba(255,255,255,0.7)'
 	});
 
 	//
+
+	onUpdate(function(data) {
+
+		switch(data.object.name) {
+
+			case 'Star':
+			case 'Bio':
+
+				data.object.move(270);
+
+			break;
+
+			case 'Shoot':
+
+				data.object.move(90);
+
+			break;
+
+			case 'Asteroid':
+
+				data.object.move(270);
+
+			break;
+
+		}
+
+	});
 
 	onWorldUpdate(function() {
 
@@ -199,8 +244,8 @@ createWorld('world', [ 1280, 800 ], function() {
 
 		var time = Date.now();
 		frames++;
-		if(time > prevTime+1000) {
-			fps = Math.ceil((frames*1000)/(time-prevTime)*100)/100;
+		if(time > prevTime + 1000) {
+			fps = Math.ceil((frames * 1000) / (time - prevTime) * 100) / 100;
 			prevTime = time;
 			frames = 0;
      		hudFPS.setText('FPS: ' + fps);
@@ -208,57 +253,57 @@ createWorld('world', [ 1280, 800 ], function() {
 
 		//
 
-		moveMap([ 0, 1 ], 4);
+		moveMap(270, 4);
 
-		if(BIO) {
-			BIO.move([ 0, 1 ]);
-		}
+		if(random(1, 150) == 1) {
 
-		for(var i in SHOOTS) {
-			SHOOTS[i].move([ 0, -1 ]);
-		}
-
-		for(var i in ASTEROIDS) {
-			ASTEROIDS[i].move([ 0, 1 ]);
-		}
-
-		for(var i in STARS) {
-			STARS[i].move([ 0, 1 ]);
-		}
-
-		if(rnd(1, 150) == 1) {
-
-			STARS.push(createObject('Star', {
-				size: [ 12, 12 ],
+			createObject('Star', {
+				size: {
+					width: 12,
+					height: 12
+				},
 				sprite: 'star.png',
-				position: [ rnd(100, 1180), -5 ],
-				speed: rnd(1, 3)
-			}));
-
-		}
-
-		if(rnd(1, 350) == 1 && !BIO) {
-
-			BIO = createObject('Bio', {
-				size: [ 24, 24 ],
-				sprite: 'bio.png',
-				position: [ rnd(100, 1180), -11 ],
-				speed: rnd(2, 3)
+				position: {
+					x: random(100, 1180), 
+					y: -5
+				},
+				velocity: random(1, 3)
 			});
 
 		}
 
-		if(rnd(1, 40) == 1) {
+		if(random(1, 350) == 1 && !BIO) {
 
-			var data = A_DATA[rnd(0, A_DATA.length-1)];
+			BIO = createObject('Bio', {
+				size: {
+					width: 24,
+					height: 24
+				},
+				sprite: 'bio.png',
+				position: {
+					x: random(100, 1180), 
+					y: -11
+				},
+				velocity: random(2, 3)
+			});
 
-			ASTEROIDS.push(createObject('Asteroid', {
+		}
+
+		if(random(1, 40) == 1) {
+
+			var data = A_DATA[random(0, A_DATA.length - 1)];
+
+			createObject('Asteroid', {
 				sprite: data.sprite,
-				position: [ rnd(100, 1180), -(data.size[1]/2-1) ],
-				speed: rnd(1, 3),
+				position: {
+					x: random(100, 1180), 
+					y: -data.height / 2 + 1
+				},
+				velocity: random(1, 3),
 				polygons: data.polygons,
-				health: data.health
-			}));
+				health: data.health,
+				angle: random(0, 90)
+			});
 
 		}
 		
@@ -268,10 +313,9 @@ createWorld('world', [ 1280, 800 ], function() {
 
 		if(data.actor.name == 'Asteroid') {
 
-			data.actor.giveDamage(player, SUPER ? 9999 : rnd(20, 50));
+			data.actor.giveDamage(player, SUPER ? 9999 : random(20, 50));
 
 			data.object.destroy();
-			SHOOTS.splice(SHOOTS.indexOf(data.object), 1);
 
 		}
 
@@ -293,7 +337,10 @@ createWorld('world', [ 1280, 800 ], function() {
 
 				createHud('ВЫ ПРОИГРАЛИ', {
 					toggle: true,
-					position: [ 620, 400 ],
+					position: {
+						x: 620,
+						y: 400
+					},
 					size: 50,
 					color: '#fff',
 					bold: true,
@@ -362,12 +409,6 @@ createWorld('world', [ 1280, 800 ], function() {
 			hudSuper.setText('Супер режим: ' + SUPER_TIME + ' сек');
 			setTimeout(superTimeout, 1000);
 		}
-
-	}
-
-	function rnd(min, max) {
-
-		return Math.round(min-0.5+Math.random()*(max-min+1));
 
 	}
 
