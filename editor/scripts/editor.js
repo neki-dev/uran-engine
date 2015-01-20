@@ -310,7 +310,7 @@ $(function() {
 		code += '{';
 
 		if(POINTS.length == 0) {
-			code += '\n\tsize: [ ' + OBJECT_DATA.size[0] + ', ' + OBJECT_DATA.size[1] + ' ]';
+			code += '\n\tsize: {\n\t\twidth: ' + OBJECT_DATA.size[0] + ',\n\t\theight: ' + OBJECT_DATA.size[1] + '\n\t}';
 		} else {
 			code += '\n\tpolygons: [';
 			for(var k = 0; k < POINTS.length; ++k) {
