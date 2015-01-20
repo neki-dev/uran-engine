@@ -15,7 +15,7 @@ var CONST = {
 	RAD: Math.PI / 180,
 	DEG: 180 / Math.PI,
 	FRAMES: 60,
-	DEBUG: true
+	DEBUG: false
 
 };
 
@@ -1573,7 +1573,7 @@ window.requestAnimFrame = (function() {
 })();
 
 /*
-**	Прочие системные функции
+**	Прочие функции
 */
 
 function random(min, max) {
