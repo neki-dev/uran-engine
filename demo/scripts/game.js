@@ -128,32 +128,20 @@ createWorld('world', [ 1280, 800 ], function() {
 			return;
 		}
 
-		switch(key) {
+		if(key == KEYS.UP) {
+			player.move(90);
+		}
 
-			case KEYS.UP:
-			
-				player.move(90);
+		if(key == KEYS.DOWN) {
+			player.move(270);
+		}
 
-			break;
+		if(key == KEYS.RIGHT) {
+			player.move(0);
+		}
 
-			case KEYS.DOWN:
-			
-				player.move(270);
-
-			break;
-
-			case KEYS.RIGHT:
-			
-				player.move(0);
-
-			break;
-
-			case KEYS.LEFT:
-			
-				player.move(180);
-
-			break;
-
+		if(key == KEYS.LEFT) {
+			player.move(180);
 		}
 
 	});
