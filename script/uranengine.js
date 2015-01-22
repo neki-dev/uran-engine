@@ -1,8 +1,11 @@
 /*
 
 	uranEngine 
-	Current version: v1.4.0
-	www.uranengine.ru 
+	Текущая версия: 1.4.1
+	_______________________________
+
+	uranengine.ru
+	github.com/Essle/uranEngine
 
 */
 
@@ -36,8 +39,11 @@ function _element(name) {
 
 	this.data = {
 		polygons: {
-			save: [],
-			full: []
+			points: [],
+			size: {
+				height: 0,
+				width: 0
+			}
 		},
 		collision: [],
 		offset: {
@@ -132,40 +138,32 @@ _element.prototype = {
 
 		if(typeof property.size == 'object') {
 
-			var prevSize = this.property.size;
-
 			this.property.size = {
 				width: (typeof property.size.width == 'number') ? property.size.width : this.property.size.width,
 				height: (typeof property.size.height == 'number') ? property.size.height : this.property.size.height
 			};
 
-			if(!this.data.polygons.save.length) {
+			__updateOffset(this);
 
-				this.set({
-					polygons: [
-						[ 0, 0 ],
-						[ this.property.size.width, 0 ],
-						[ this.property.size.width, this.property.size.height ],
-						[ 0, this.property.size.height ]
-					]
-				});
+			if(!this.property.polygons.length) {
 
-			} else if(this.property.size.width != prevSize.width || this.property.size.height != prevSize.height) {
+				this.data.polygons.size = this.property.size;
 
-				for(var k in this.data.polygons.save) {
+				this.property.polygons = [
+					[ 0, 0 ],
+					[ this.property.size.width, 0 ],
+					[ this.property.size.width, this.property.size.height ],
+					[ 0, this.property.size.height ]
+				];
 
-					this.data.polygons.full[k] = this.data.polygons.save[k] = [
-						this.data.polygons.save[k][0] / prevSize.width * this.property.size.width,
-						this.data.polygons.save[k][1] / prevSize.height * this.property.size.height
-					];
+				this.data.polygons.points = cloneArray(this.property.polygons);
+				this.data.polygons.points[this.property.polygons.length] = this.data.polygons.points[0];
 
-				}
+			} else {
 
-				this.data.polygons.full[this.property.polygons.length] = this.data.polygons.full[0];
+				__updatePolygons(this);
 
 			}
-
-			__updateOffset(this);
 
 		}
 
@@ -177,20 +175,32 @@ _element.prototype = {
 				console.warn('Количество полигонов не может быть меньше трех');
 			} else {
 
+				this.data.polygons.size = {
+					width: 0,
+					height: 0
+				};
+
+				for(var k in property.polygons) {
+
+					this.data.polygons.size = {
+						width: (this.data.polygons.size.width < property.polygons[k][0]) ? property.polygons[k][0] : this.data.polygons.size.width,
+						height: (this.data.polygons.size.height < property.polygons[k][1]) ? property.polygons[k][1] : this.data.polygons.size.height
+					};
+
+				}
+
+				this.property.polygons = cloneArray(property.polygons);
+	
+				this.data.polygons.points = cloneArray(property.polygons);
+				this.data.polygons.points[this.property.polygons.length] = this.data.polygons.points[0];
+
 				if(this.property.size.width == 0 && this.property.size.height == 0) {
 
-					for(var k in property.polygons) {
-						this.property.size = {
-							width: (this.property.size.width < property.polygons[k][0]) ? property.polygons[k][0] : this.property.size.width,
-							height: (this.property.size.height < property.polygons[k][1]) ? property.polygons[k][1] : this.property.size.height
-						};
-					}
+					this.property.size = this.data.polygons.size;
 
 					__updateOffset(this);
 
 				}
-
-				this.property.polygons = property.polygons;
 
 				__updatePolygons(this);
 
@@ -208,8 +218,7 @@ _element.prototype = {
 				property.angle += 360;
 			}
 
-			this.property.angle = property.angle;
-			this.data.angle = property.angle * -CONST.RAD;
+			this.data.angle = (this.property.angle = property.angle) * -CONST.RAD;
 
 			__updatePolygons(this);
 
@@ -299,13 +308,13 @@ _element.prototype = {
 
 			if(this.property.fasten) {
 
-				for(var k in this.data.polygons.save) {
+				for(var k in this.data.polygons.points) {
 
 					if(
-						offset.left + this.data.polygons.save[k][0] < 0 || 
-						offset.left + this.data.polygons.save[k][0] > WORLD.element.width || 
-						offset.top + this.data.polygons.save[k][1] < 0 || 
-						offset.top + this.data.polygons.save[k][1] > WORLD.element.height
+						offset.left + this.data.polygons.points[k][0] < 0 || 
+						offset.left + this.data.polygons.points[k][0] > WORLD.element.width || 
+						offset.top + this.data.polygons.points[k][1] < 0 || 
+						offset.top + this.data.polygons.points[k][1] > WORLD.element.height
 					) {
 						return this;
 					}
@@ -583,18 +592,18 @@ function __isPositionInObject(position, getObject, object) {
 		return false;
 	}
 
-	for(var k = 0; k < object.data.polygons.full.length - 1; ++k) {
+	for(var k = 0; k < object.data.polygons.points.length - 1; ++k) {
 
-		if(__isPositionInPolygon(offset.left + object.data.polygons.full[k][0], offset.top + object.data.polygons.full[k][1], getObject)) {
+		if(__isPositionInPolygon(offset.left + object.data.polygons.points[k][0], offset.top + object.data.polygons.points[k][1], getObject)) {
 			return true;
 		}
 
 		if(__isLineIntersectObject([
-			offset.left + object.data.polygons.full[k][0], 
-			offset.top + object.data.polygons.full[k][1]
+			offset.left + object.data.polygons.points[k][0], 
+			offset.top + object.data.polygons.points[k][1]
 		], [
-			offset.left + object.data.polygons.full[k + 1][0], 
-			offset.top + object.data.polygons.full[k + 1][1]
+			offset.left + object.data.polygons.points[k + 1][0], 
+			offset.top + object.data.polygons.points[k + 1][1]
 		], getObject)) {
 			return true;
 		}
@@ -603,15 +612,15 @@ function __isPositionInObject(position, getObject, object) {
 
 	function __isLineIntersectObject(A_start, A_end, _object) {
 
-		for(var k = 0; k < _object.data.polygons.full.length - 1; ++k) {
+		for(var k = 0; k < _object.data.polygons.points.length - 1; ++k) {
 
 			var B_start = [
-					_object.data.offset.left + _object.data.polygons.full[k][0], 
-					_object.data.offset.top + _object.data.polygons.full[k][1]
+					_object.data.offset.left + _object.data.polygons.points[k][0], 
+					_object.data.offset.top + _object.data.polygons.points[k][1]
 				],
 				B_end = [
-					_object.data.offset.left + _object.data.polygons.full[k + 1][0], 
-					_object.data.offset.top + _object.data.polygons.full[k + 1][1]
+					_object.data.offset.left + _object.data.polygons.points[k + 1][0], 
+					_object.data.offset.top + _object.data.polygons.points[k + 1][1]
 				];
 
 			if(
@@ -648,15 +657,15 @@ function __isPositionInPolygon(_x, _y, _object) {
 		x = [],
 		y = [];
 
-	for(var i = 0, j = _object.data.polygons.save.length - 1; i < _object.data.polygons.save.length; j = i++) {
+	for(var i = 0, j = _object.data.polygons.points.length - 1; i < _object.data.polygons.points.length; j = i++) {
 
 		x = [
-			_object.data.offset.left + _object.data.polygons.save[i][0],
-			_object.data.offset.left + _object.data.polygons.save[j][0]
+			_object.data.offset.left + _object.data.polygons.points[i][0],
+			_object.data.offset.left + _object.data.polygons.points[j][0]
 		];
 		y = [
-			_object.data.offset.top + _object.data.polygons.save[i][1],
-			_object.data.offset.top + _object.data.polygons.save[j][1]
+			_object.data.offset.top + _object.data.polygons.points[i][1],
+			_object.data.offset.top + _object.data.polygons.points[j][1]
 		];
 
 		if(((y[0] > _y) != (y[1] > _y)) && (_x < (x[1] - x[0]) * (_y - y[0]) / (y[1] - y[0]) + x[0])) {
@@ -693,22 +702,25 @@ function __updateOffset(object) {
 
 function __updatePolygons(object) {
 
+	var scaleX = object.data.polygons.size.width / object.property.size.width,
+		scaleY = object.data.polygons.size.height / object.property.size.height;
+
 	var sin = Math.sin(object.data.angle),
 		cos = Math.cos(object.data.angle);
 
 	for(var k in object.property.polygons) {
 
-		var xTemp = object.property.polygons[k][0] - object.property.size.width / 2,
-			yTemp = object.property.polygons[k][1] - object.property.size.height / 2;
+		var xTemp = (object.property.polygons[k][0] / scaleX) - object.property.size.width / 2,
+			yTemp = (object.property.polygons[k][1] / scaleY) - object.property.size.height / 2;
 
-		object.data.polygons.full[k] = object.data.polygons.save[k] = [
+		object.data.polygons.points[k] = [
 			(object.property.size.width / 2) + (xTemp * cos - yTemp * sin),
 			(object.property.size.height / 2) + (xTemp * sin + yTemp * cos)
 		];
 
 	}
 
-	object.data.polygons.full[object.property.polygons.length] = object.data.polygons.full[0];
+	object.data.polygons.points[object.property.polygons.length] = object.data.polygons.points[0];
 
 }
 
@@ -764,7 +776,7 @@ function onUpdate(target, callback) {
 
 }
 
-// Событие клика по объекту
+// Событие клика по объекту / HUD
 
 function onClicked(target, callback) {
 
@@ -1086,16 +1098,16 @@ function __updateWorld() {
 		WORLD.canvas.rotate(-OBJECTS[i].data.angle);
 		WORLD.canvas.translate(-OBJECTS[i].property.position.x, -OBJECTS[i].property.position.y);
 
-		if(OBJECTS[i].data.polygons.full.length > 2 && CONST.DEBUG) {
+		if(OBJECTS[i].data.polygons.points.length > 2 && CONST.DEBUG) {
 
-			for(var k = 0; k < OBJECTS[i].data.polygons.full.length - 1; ++k) {
+			for(var k = 0; k < OBJECTS[i].data.polygons.points.length - 1; ++k) {
 				WORLD.canvas.moveTo(
-					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons.full[k][0], 
-					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons.full[k][1]
+					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons.points[k][0], 
+					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons.points[k][1]
 				);
 				WORLD.canvas.lineTo(
-					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons.full[k + 1][0], 
-					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons.full[k + 1][1]
+					OBJECTS[i].data.offset.left + OBJECTS[i].data.polygons.points[k + 1][0], 
+					OBJECTS[i].data.offset.top + OBJECTS[i].data.polygons.points[k + 1][1]
 				);
 			}
 
@@ -1491,6 +1503,22 @@ window.onclick = function(event) {
 
 	}
 
+	/*for(var i in HUD) {
+
+		if() {
+
+			EVENTS['clicked'].call(HUD[i], {
+				hud: HUD[i],
+				position: {
+					x: event.pageX,
+					y: event.pageY
+				}
+			});
+
+		}
+
+	}*/
+
 }
 
 /*
@@ -1593,5 +1621,27 @@ function anglePoint(fromX, fromY, x, y) {
 	var angle = Math.atan2(fromY - y, x - fromX) * CONST.DEG;
 
 	return (angle < 0) ? angle + 360 : angle;
+
+}
+
+function cloneArray(array) {
+
+	return array.slice();
+
+}
+
+function cloneObject(object) {
+
+	if(typeof object != 'object') {
+		return object;
+	}
+
+	var temp = new object.constructor(); 
+
+	for(var k in object) {
+		temp[k] = (typeof object[i] == 'object') ? cloneObject(object[k]) : object[k];
+	}
+
+	return temp;
 
 }

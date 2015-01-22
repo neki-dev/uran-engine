@@ -79,7 +79,7 @@ createWorld('world', [ 1280, 800 ], function() {
 		}
 	];
 
-	var hudScore = createHud('Очки: 0', {
+	var hudScore = createHud('ОЧКИ: 0', {
 		toggle: true,
 		position: {
 			x: 10,
@@ -118,9 +118,9 @@ createWorld('world', [ 1280, 800 ], function() {
 		},
 		velocity: 3,
 		fasten: true
-	}).specifyPlayer();
-
-	player.animate('player.png', 5, 5, true);
+	})
+	.specifyPlayer()
+	.animate('player.png', 5, 5, true);
 
 	onKeyHas(function(key) {
 
@@ -128,20 +128,32 @@ createWorld('world', [ 1280, 800 ], function() {
 			return;
 		}
 
-		if(key == KEYS.UP) {
-			player.move(90);
-		}
+		switch(key) {
 
-		if(key == KEYS.DOWN) {
-			player.move(270);
-		}
+			case KEYS.UP:
+			
+				player.move(90);
 
-		if(key == KEYS.RIGHT) {
-			player.move(0);
-		}
+			break;
 
-		if(key == KEYS.LEFT) {
-			player.move(180);
+			case KEYS.DOWN:
+			
+				player.move(270);
+
+			break;
+
+			case KEYS.RIGHT:
+			
+				player.move(0);
+
+			break;
+
+			case KEYS.LEFT:
+			
+				player.move(180);
+
+			break;
+
 		}
 
 	});
