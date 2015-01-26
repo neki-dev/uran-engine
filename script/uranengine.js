@@ -129,13 +129,11 @@ _object.prototype = {
 
 	//
 
-	set: function(_property) {
+	set: function(property) {
 
 		if(!this.has()) {
 			return undefined;
 		}
-
-		var property = clone(_property);
 
 		// Установка размеров объекта
 
