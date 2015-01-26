@@ -119,7 +119,6 @@ createWorld('world', [ 1280, 800 ], function() {
 		velocity: 3,
 		fasten: true
 	})
-	.specifyPlayer()
 	.animate('player.png', 5, 5, true);
 
 	onKeyHas(function(key) {
@@ -156,7 +155,8 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			playSound(SUPER ? 'shoot-super.wav' : 'shoot.wav');
 
-			var position = player.get('position');
+			var positionPlayer = player.get('position');
+			positionPlayer.y -= 61;
 
 			createObject('Shoot', {
 				size: (SUPER ? { 
@@ -167,11 +167,8 @@ createWorld('world', [ 1280, 800 ], function() {
 					height: 4 
 				}),
 				sprite: SUPER ? 'shoot-super.png' : 'shoot.png',
-				position: {
-					x: position.x,
-					y: position.y - 61
-				},
-				velocity: 5
+				position: positionPlayer,
+				velocity: 7
 			});
 
 		}
@@ -180,13 +177,18 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onMove(function(data) {
 
-		if(data.object.name != 'Player') {
-			if(!data.object.isVisible()) {
-				data.object.destroy();
+		if(this.name != 'Player') {
+
+			if(!this.isVisible()) {
+
+				this.destroy();
+
 				if(BIO && !BIO.has()) {
 					delete BIO;
 				}
+
 			}
+
 		}
 
 	});
@@ -213,24 +215,29 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onUpdate(function(data) {
 
-		switch(data.object.name) {
+		switch(this.name) {
 
 			case 'Star':
 			case 'Bio':
 
-				data.object.move(270);
+				this.move(270);
 
 			break;
 
 			case 'Shoot':
 
-				data.object.move(90);
+				this.move(90);
 
 			break;
 
 			case 'Asteroid':
 
-				data.object.move(270);
+				var angle = this.get('angle');
+
+				this.move(270)
+				.set({
+					angle: angle + this.getData('rotate')
+				});
 
 			break;
 
@@ -303,7 +310,8 @@ createWorld('world', [ 1280, 800 ], function() {
 				polygons: data.polygons,
 				health: data.health,
 				angle: random(0, 90)
-			});
+			})
+			.setData('rotate', random(-10, 10) / 20);
 
 		}
 		
@@ -311,11 +319,11 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Shoot', function(data) {
 
-		if(data.actor.name == 'Asteroid') {
+		this.destroy();
 
-			data.actor.giveDamage(player, SUPER ? 9999 : random(20, 50));
+		if(data.object.name == 'Asteroid') {
 
-			data.object.destroy();
+			data.object.giveDamage(player, SUPER ? 9999 : random(20, 50));
 
 		}
 
@@ -323,7 +331,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Asteroid', function(data) {
 
-		if(data.actor.name == 'Player' && !DEATH) {
+		if(data.object.name == 'Player' && !DEATH) {
 			
 			playSound('boom.wav');
 
@@ -355,9 +363,9 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Star', function(data) {
 
-		if(data.actor.name == 'Player' && !DEATH) {
+		if(data.object.name == 'Player' && !DEATH) {
 
-			data.object.destroy();
+			this.destroy();
 
 			SCORE += 3;
 
@@ -369,9 +377,9 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onCollision('Bio', function(data) {
 
-		if(data.actor.name == 'Player' && !DEATH) {
+		if(data.object.name == 'Player' && !DEATH) {
 
-			data.object.destroy();
+			this.destroy();
 
 			SUPER = true;
 
@@ -388,7 +396,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	onDeath('Asteroid', function(data) {
 
-		data.object.destroy();
+		this.destroy();
 
 		SCORE++;
 
