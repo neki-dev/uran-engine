@@ -1,7 +1,7 @@
 /*
 
 	uranEngine 
-	Текущая версия: 1.5.0
+	Текущая версия: 1.6.0
 	_______________________________
 
 	uranengine.ru
@@ -63,7 +63,8 @@ function _object(name) {
 			frames: 0
 		},
 		angle: 0,
-		sprite: null
+		sprite: null,
+		mouse: false
 	};
 
 	this.property = {
@@ -514,7 +515,7 @@ function __isObjectCollision(object, position) {
 			continue;
 		}
 
-		if(__isPositionInObject(position, object, OBJECTS[i])) {
+		if(__isObjectInObject(position, object, OBJECTS[i])) {
 			
 			if(OBJECTS[i].property.collision) {
 				collision = true;
@@ -564,7 +565,7 @@ function __isObjectCollision(object, position) {
 
 }
 
-function __isPositionInObject(position, object, getObject) {
+function __isObjectInObject(position, object, getObject) {
 
 	var offset = __getObjectPositionOffset(object, position);
 
@@ -630,7 +631,7 @@ function __isPositionInObject(position, object, getObject) {
 
 		}
 
-		if(__isPositionInPolygon(
+		if(isPositionInObject(
 			offset.left + object.data.polygons.points[k][0], 
 			offset.top + object.data.polygons.points[k][1], 
 			getObject)
@@ -641,33 +642,6 @@ function __isPositionInObject(position, object, getObject) {
 	}
 
 	return false;
-
-}
-
-function __isPositionInPolygon(P_x, P_y, object) {
-
-	var inside = false,
-		x = [],
-		y = [];
-
-	for(var i = 0, j = object.data.polygons.points.length - 1; i < object.data.polygons.points.length; j = i++) {
-
-		x = [
-			object.data.offset.left + object.data.polygons.points[i][0],
-			object.data.offset.left + object.data.polygons.points[j][0]
-		];
-		y = [
-			object.data.offset.top + object.data.polygons.points[i][1],
-			object.data.offset.top + object.data.polygons.points[j][1]
-		];
-
-		if(((y[0] > P_y) != (y[1] > P_y)) && (P_x < (x[1] - x[0]) * (P_y - y[0]) / (y[1] - y[0]) + x[0])) {
-			inside = !inside;
-		} 
-
-	}
-
-	return inside;
 
 }
 
@@ -764,7 +738,7 @@ function createWorld(canvasID, size, callback) {
 		WORLD.element.width = size[0];
 		WORLD.element.height = size[1];
 
-		WORLD.canvas.textBaseline = 'middle';
+		WORLD.canvas.textBaseline = 'hanging';
 		WORLD.canvas.lineWidth = 2;
 		WORLD.canvas.strokeStyle = '#ff0000';
 
@@ -991,6 +965,48 @@ function moveMap(angle, speed) {
 
 }
 
+// Проверка находимости HUD в указанных координатах
+
+function isPositionInHud(x, y, hud) {
+
+	return (
+		x > hud.data.offset.left && 
+		x < hud.data.offset.right && 
+		y > hud.data.offset.top && 
+		y < hud.data.offset.bottom
+	);
+
+}
+
+// Проверка находимости объекта в указанных координатах
+
+function isPositionInObject(x, y, object) {
+
+	var inside = false,
+		dx = [],
+		dy = [];
+
+	for(var i = 0, j = object.data.polygons.points.length - 1; i < object.data.polygons.points.length; j = i++) {
+
+		dx = [
+			object.data.offset.left + object.data.polygons.points[i][0],
+			object.data.offset.left + object.data.polygons.points[j][0]
+		];
+		dy = [
+			object.data.offset.top + object.data.polygons.points[i][1],
+			object.data.offset.top + object.data.polygons.points[j][1]
+		];
+
+		if(((dy[0] > y) != (dy[1] > y)) && (x < (dx[1] - dx[0]) * (y - dy[0]) / (dy[1] - dy[0]) + dx[0])) {
+			inside = !inside;
+		} 
+
+	}
+
+	return inside;
+
+}
+
 /*
 **	Системные функции мира
 */
@@ -1095,9 +1111,11 @@ function __updateWorld() {
 		}
 
 		WORLD.canvas.textAlign = HUD[i].property.align;
+		WORLD.canvas.font = HUD[i].property.style + ' ' + HUD[i].property.size + 'px ' + HUD[i].property.font;
 		WORLD.canvas.fillStyle = HUD[i].property.color;
-		WORLD.canvas.font = (HUD[i].property.bold ? 'bold ' : '') + HUD[i].property.size + 'px ' + HUD[i].property.font;
 		WORLD.canvas.fillText(HUD[i].text, HUD[i].property.position.x, HUD[i].property.position.y);
+
+		__updateHudScale(HUD[i]);
 
 	}
 
@@ -1120,6 +1138,8 @@ var EVENT_LIST = [
 	'onDeath', 
 	'onEnter', 
 	'onLeave',
+	'onMouseEnter',
+	'onMouseLeave',
 	'onClicked',
 	'onUpdate',
 	'onPolygon',
@@ -1130,7 +1150,11 @@ var EVENT_LIST = [
 	'onKeyHas',
 	'onKeyDown',
 	'onKeyUp',
-	'onMouseMove'
+	'onMouseMove',
+
+	'onHudMouseEnter',
+	'onHudMouseLeave',
+	'onHudClicked'
 
 ];
 
@@ -1254,13 +1278,23 @@ function _hud(text) {
 
 	this.text = text || '';
 
+	this.data = {
+		offset: {
+			left: 0,
+			right: 0,
+			top: 0,
+			bottom: 0
+		},
+		mouse: false
+	};
+
 	this.property = {
-		toggle: false,
+		toggle: true,
 		align: 'left',
 		color: '#fff',
 		size: 14,
 		font: 'Arial',
-		bold: false,
+		style: '',
 		position: {
 			x: 5,
 			y: 20
@@ -1334,11 +1368,11 @@ _hud.prototype = {
 			
 		}
 
-		// Установка толстого шрифта
+		// Установка стиля шрифта
 
-		if(typeof property.bold == 'boolean') {
+		if(typeof property.style == 'string') {
 
-			this.property.bold = property.bold;
+			this.property.style = property.style;
 			
 		}
 
@@ -1384,6 +1418,39 @@ _hud.prototype = {
 };
 
 /*
+**	Системные функции HUD
+*/
+
+function __updateHudScale(hud) {
+
+	var width = WORLD.canvas.measureText(hud.text).width;
+
+	switch(hud.property.align) {
+
+		case 'left':
+			hud.data.offset.left = hud.property.position.x;
+		break;
+
+		case 'center':
+			hud.data.offset.left = hud.property.position.x - width / 2;
+		break;
+
+		case 'right':
+			hud.data.offset.left = -hud.property.position.x;
+		break;
+
+	}
+
+	hud.data.offset = {
+		top: hud.property.position.y,
+		bottom: hud.property.position.y + hud.property.size * 0.8,
+		left: hud.data.offset.left,
+		right: hud.data.offset.left + width
+	};
+
+}
+
+/*
 **	Константы клавиш
 */
 
@@ -1424,6 +1491,70 @@ window.onmousemove = function(event) {
 		y: event.pageY
 	});
 
+	for(i in OBJECTS) {
+
+		if(isPositionInObject(event.pageX, event.pageY, OBJECTS[i])) {
+
+			if(!OBJECTS[i].data.mouse) {
+
+				OBJECTS[i].data.mouse = true;
+
+				EVENTS['onMouseEnter'].run(OBJECTS[i], {
+					position: {
+						x: event.pageX,
+						y: event.pageY
+					}
+				});
+
+			}
+
+		} else if(OBJECTS[i].data.mouse) {
+
+			OBJECTS[i].data.mouse = false;
+
+			EVENTS['onMouseLeave'].run(OBJECTS[i], {
+				position: {
+					x: event.pageX,
+					y: event.pageY
+				}
+			});
+
+		}
+
+	}
+
+	for(i in HUD) {
+
+		if(isPositionInHud(event.pageX, event.pageY, HUD[i])) {
+
+			if(!HUD[i].data.mouse) {
+
+				HUD[i].data.mouse = true;
+
+				EVENTS['onHudMouseEnter'].run(HUD[i], {
+					position: {
+						x: event.pageX,
+						y: event.pageY
+					}
+				});
+
+			}
+
+		} else if(HUD[i].data.mouse) {
+
+			HUD[i].data.mouse = false;
+
+			EVENTS['onHudMouseLeave'].run(HUD[i], {
+				position: {
+					x: event.pageX,
+					y: event.pageY
+				}
+			});
+
+		}
+
+	}
+
 };
 
 window.onkeydown = function(event) {
@@ -1463,7 +1594,7 @@ window.onclick = function(event) {
 
 	for(i in OBJECTS) {
 
-		if(__isPositionInPolygon(event.pageX, event.pageY, OBJECTS[i])) {
+		if(isPositionInObject(event.pageX, event.pageY, OBJECTS[i])) {
 
 			EVENTS['onClicked'].run(OBJECTS[i], {
 				position: {
@@ -1476,14 +1607,11 @@ window.onclick = function(event) {
 
 	}
 
-	// TODO
+	for(i in HUD) {
 
-	/*for(i in HUD) {
+		if(isPositionInHud(event.pageX, event.pageY, HUD[i])) {
 
-		if() {
-
-			EVENTS['onClicked'].run(HUD[i], {
-				hud: HUD[i],
+			EVENTS['onHudClicked'].run(HUD[i], {
 				position: {
 					x: event.pageX,
 					y: event.pageY
@@ -1492,7 +1620,7 @@ window.onclick = function(event) {
 
 		}
 
-	}*/
+	}
 
 };
 

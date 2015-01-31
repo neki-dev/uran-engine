@@ -80,22 +80,22 @@ createWorld('world', [ 1280, 800 ], function() {
 	];
 
 	var hudScore = createHud('ОЧКИ: 0', {
-		toggle: true,
 		position: {
 			x: 10,
-			y: 24
+			y: 13
 		},
 		size: 22,
-		bold: true
+		style: 'bold'
 	});
 
 	var hudSuper = createHud({
+		toggle: false,
 		position: {
 			x: 10,
-			y: 54
+			y: 43
 		},
 		size: 22,
-		bold: true
+		style: 'bold'
 	});
 
 	var player = createObject('Player', {
@@ -202,10 +202,9 @@ createWorld('world', [ 1280, 800 ], function() {
 	// FPS hud
 
 	var hudFPS = createHud('', {
-		toggle: true,
 		position: {
 			x: 10,
-			y: 780
+			y: 772
 		},
 		size: 18,
 		color: 'rgba(255,255,255,0.7)'
@@ -344,14 +343,13 @@ createWorld('world', [ 1280, 800 ], function() {
 				player.destroy();
 
 				createHud('ВЫ ПРОИГРАЛИ', {
-					toggle: true,
 					position: {
 						x: 620,
 						y: 400
 					},
 					size: 50,
 					color: '#fff',
-					bold: true,
+					style: 'bold',
 					align: 'center'
 				});
 
