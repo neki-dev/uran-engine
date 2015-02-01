@@ -1,7 +1,7 @@
 /*
 
 	uranEngine 
-	Текущая версия: 1.6.0
+	Текущая версия: 1.7.1
 	_______________________________
 
 	uranengine.ru
@@ -15,9 +15,10 @@
 
 var CONST = {
 
+	FRAMES: 60,
 	RAD: Math.PI / 180,
 	DEG: 180 / Math.PI,
-	FRAMES: 60,
+	FONTHEIGHT: 0.8,
 	DEBUG: false
 
 };
@@ -141,8 +142,12 @@ _object.prototype = {
 		if(typeof property.size == 'object') {
 
 			this.property.size = {
-				width: (typeof property.size.width == 'number') ? property.size.width << 0 : this.property.size.width,
-				height: (typeof property.size.height == 'number') ? property.size.height << 0 : this.property.size.height
+				width: (typeof property.size.width == 'number') ?
+					property.size.width << 0 :
+					this.property.size.width,
+				height: (typeof property.size.height == 'number') ?
+					property.size.height << 0 :
+					this.property.size.height
 			};
 
 			__updateOffset(this);
@@ -185,8 +190,12 @@ _object.prototype = {
 				for(var k in property.polygons) {
 
 					this.data.polygons.size = {
-						width: (this.data.polygons.size.width < property.polygons[k][0]) ? property.polygons[k][0] : this.data.polygons.size.width,
-						height: (this.data.polygons.size.height < property.polygons[k][1]) ? property.polygons[k][1] : this.data.polygons.size.height
+						width: (this.data.polygons.size.width < property.polygons[k][0]) ?
+							property.polygons[k][0] :
+							this.data.polygons.size.width,
+						height: (this.data.polygons.size.height < property.polygons[k][1]) ?
+							property.polygons[k][1] :
+							this.data.polygons.size.height
 					};
 
 				}
@@ -283,8 +292,12 @@ _object.prototype = {
 		if(typeof property.velocity == 'object') {
 		
 			this.property.velocity = {
-				x: (typeof property.velocity.x == 'number') ? property.velocity.x : this.property.velocity.x,
-				y: (typeof property.velocity.y == 'number') ? property.velocity.y : this.property.velocity.y
+				x: (typeof property.velocity.x == 'number') ?
+					property.velocity.x :
+					this.property.velocity.x,
+				y: (typeof property.velocity.y == 'number') ?
+					property.velocity.y :
+					this.property.velocity.y
 			};
 
 		} else if(typeof property.velocity == 'number') {
@@ -301,8 +314,12 @@ _object.prototype = {
 		if(typeof property.position == 'object') {
 
 			this.property.position = {
-				x: (typeof property.position.x == 'number') ? property.position.x << 0 : this.property.position.x,
-				y: (typeof property.position.y == 'number') ? property.position.y << 0 : this.property.position.y
+				x: (typeof property.position.x == 'number') ?
+					property.position.x << 0 :
+					this.property.position.x,
+				y: (typeof property.position.y == 'number') ?
+					property.position.y << 0 :
+					this.property.position.y
 			};
 
 			__updateOffset(this);
@@ -419,10 +436,14 @@ _object.prototype = {
 			
 			this.data.animate = {
 				sprite: WORLD.sprites[sprite],
-				infinity: (typeof pause == 'boolean') ? pause : infinity,
+				infinity: (typeof pause == 'boolean') ?
+					pause :
+					infinity,
 				animated: true,
 				getFrame: 1,
-				pause: (typeof pause == 'number') ? pause : this.data.animate.pause,
+				pause: (typeof pause == 'number') ?
+					pause :
+					this.data.animate.pause,
 				update: 0,
 				frames: frames
 			};
@@ -496,6 +517,35 @@ _object.prototype = {
 		this.move(anglePoint(this.property.position.x, this.property.position.y, x, y));
 
 		return this;
+
+	},
+
+	// Проверка вхождения объекта в указанные координаты
+
+	isLocated: function(x, y) {
+
+		var inside = false,
+			dx = [],
+			dy = [];
+
+		for(var i = 0, j = this.data.polygons.points.length - 1; i < this.data.polygons.points.length; j = i++) {
+
+			dx = [
+				this.data.offset.left + this.data.polygons.points[i][0],
+				this.data.offset.left + this.data.polygons.points[j][0]
+			];
+			dy = [
+				this.data.offset.top + this.data.polygons.points[i][1],
+				this.data.offset.top + this.data.polygons.points[j][1]
+			];
+
+			if(((dy[0] > y) != (dy[1] > y)) && (x < (dx[1] - dx[0]) * (y - dy[0]) / (dy[1] - dy[0]) + dx[0])) {
+				inside = !inside;
+			} 
+
+		}
+
+		return inside;
 
 	}
 
@@ -631,11 +681,7 @@ function __isObjectInObject(position, object, getObject) {
 
 		}
 
-		if(isPositionInObject(
-			offset.left + object.data.polygons.points[k][0], 
-			offset.top + object.data.polygons.points[k][1], 
-			getObject)
-		) {
+		if(getObject.isLocated(offset.left + object.data.polygons.points[k][0], offset.top + object.data.polygons.points[k][1])) {
 			return true;
 		}
 
@@ -742,8 +788,10 @@ function createWorld(canvasID, size, callback) {
 		WORLD.canvas.lineWidth = 2;
 		WORLD.canvas.strokeStyle = '#ff0000';
 
+		__bindController();
+
 		(function loop(){
-			renderFrames(loop);
+			__renderFrames(loop);
 			__updateWorld();
 		})();
 
@@ -780,7 +828,7 @@ function selectObjects(name) {
 
 	for(var i in OBJECTS) {
 
-		if(OBJECTS[i].name == name) {
+		if(OBJECTS[i].name == name || typeof name == 'undefined') {
 			result.push(OBJECTS[i]);
 		}
 
@@ -792,14 +840,9 @@ function selectObjects(name) {
 
 // Создание HUD
 
-function createHud(text, property) {
+function createHud(property) {
 
-	if(typeof text == 'object') {
-		property = text;
-		text = '';
-	}
-
-	var hud = new _hud(text);
+	var hud = new _hud();
 
 	if(property) {
 		hud.set(property);
@@ -869,6 +912,14 @@ function playSound(sound) {
 
 }
 
+// Изменение курсора
+
+function setCursor(type) {
+
+	WORLD.element.style.cursor = type;
+
+}
+
 // Создание карты
 
 function drawMap(sprite) {
@@ -889,11 +940,11 @@ function drawMap(sprite) {
 
 		for(var i = 0; i < 2; ++i) {
 
-			var mapWidth = (WORLD.element.width - WORLD.map.position[i][0] > WORLD.element.width) ? 
-					WORLD.element.width : 
+			var mapWidth = (WORLD.element.width - WORLD.map.position[i][0] > WORLD.element.width) ?
+					WORLD.element.width :
 					WORLD.element.width - WORLD.map.position[i][0],
-				mapHeight = (WORLD.element.height - WORLD.map.position[i][1] > WORLD.element.height) ? 
-					WORLD.element.height : 
+				mapHeight = (WORLD.element.height - WORLD.map.position[i][1] > WORLD.element.height) ?
+					WORLD.element.height :
 					WORLD.element.height - WORLD.map.position[i][1];
 
 			if(WORLD.map.position[i]) {
@@ -962,48 +1013,6 @@ function moveMap(angle, speed) {
 		}
 
 	}
-
-}
-
-// Проверка находимости HUD в указанных координатах
-
-function isPositionInHud(x, y, hud) {
-
-	return (
-		x > hud.data.offset.left && 
-		x < hud.data.offset.right && 
-		y > hud.data.offset.top && 
-		y < hud.data.offset.bottom
-	);
-
-}
-
-// Проверка находимости объекта в указанных координатах
-
-function isPositionInObject(x, y, object) {
-
-	var inside = false,
-		dx = [],
-		dy = [];
-
-	for(var i = 0, j = object.data.polygons.points.length - 1; i < object.data.polygons.points.length; j = i++) {
-
-		dx = [
-			object.data.offset.left + object.data.polygons.points[i][0],
-			object.data.offset.left + object.data.polygons.points[j][0]
-		];
-		dy = [
-			object.data.offset.top + object.data.polygons.points[i][1],
-			object.data.offset.top + object.data.polygons.points[j][1]
-		];
-
-		if(((dy[0] > y) != (dy[1] > y)) && (x < (dx[1] - dx[0]) * (y - dy[0]) / (dy[1] - dy[0]) + dx[0])) {
-			inside = !inside;
-		} 
-
-	}
-
-	return inside;
 
 }
 
@@ -1106,20 +1115,42 @@ function __updateWorld() {
 
 	for(i in HUD) {
 
-		if(!HUD[i].text.length || !HUD[i].property.toggle) {
+		if(!HUD[i].property.text.length || !HUD[i].property.toggle) {
 			continue;
 		}
 
-		WORLD.canvas.textAlign = HUD[i].property.align;
-		WORLD.canvas.font = HUD[i].property.style + ' ' + HUD[i].property.size + 'px ' + HUD[i].property.font;
-		WORLD.canvas.fillStyle = HUD[i].property.color;
-		WORLD.canvas.fillText(HUD[i].text, HUD[i].property.position.x, HUD[i].property.position.y);
+		if(HUD[i].property.background) {
+			WORLD.canvas.fillStyle = HUD[i].property.background;
+			WORLD.canvas.fillRect(
+				HUD[i].data.position.x, 
+				HUD[i].data.position.y, 
+				HUD[i].data.size.width, 
+				HUD[i].data.size.height
+			);
+		}
 
-		__updateHudScale(HUD[i]);
+		if(HUD[i].data.sprite) {
+			WORLD.canvas.drawImage(
+				HUD[i].data.sprite,
+				HUD[i].data.position.x, 
+				HUD[i].data.position.y, 
+				HUD[i].data.size.width, 
+				HUD[i].data.size.height
+			);
+		}
+
+		WORLD.canvas.textAlign = HUD[i].property.align;
+		WORLD.canvas.font = HUD[i].property.textStyle + ' ' + HUD[i].property.textSize + 'px ' + HUD[i].property.textFont;
+		WORLD.canvas.fillStyle = HUD[i].property.textColor;
+		WORLD.canvas.fillText(
+			HUD[i].property.text, 
+			HUD[i].property.position.x + HUD[i].data.offsetText.x, 
+			HUD[i].property.position.y + HUD[i].data.offsetText.y
+		);
 
 	}
 
-	for(i in keyController.has) {
+	for(i in keyHas) {
 		EVENTS['onKeyHas'].run(i);
 	}
 
@@ -1274,30 +1305,45 @@ var HUD = [];
 **	Класс HUD
 */
 
-function _hud(text) { 
+function _hud(text) {
 
-	this.text = text || '';
+	this.id = new Date().getTime();
 
 	this.data = {
-		offset: {
-			left: 0,
-			right: 0,
-			top: 0,
-			bottom: 0
+		mouse: false,
+		position: {
+			x: 0,
+			y: 0
 		},
-		mouse: false
+		size: {
+			width: 0,
+			height: 0
+		},
+		sprite: null,
+		offsetText: {
+			x: 0,
+			y: 0
+		}
 	};
 
 	this.property = {
+		text: '',
+		textColor: '#fff',
+		textSize: 14,
+		textFont: 'Arial',
+		textStyle: '',
+		textPadding: [ 0, 0, 0, 0 ],
+		sprite: null,
 		toggle: true,
 		align: 'left',
-		color: '#fff',
-		size: 14,
-		font: 'Arial',
-		style: '',
+		background: null,
 		position: {
-			x: 5,
-			y: 20
+			x: 0,
+			y: 0
+		},
+		size: {
+			width: 'auto',
+			height: 'auto'
 		}
 	}
 
@@ -1317,26 +1363,8 @@ _hud.prototype = {
 
 		HUD.splice(HUD.indexOf(this), 1);
 
-		delete this.text;
+		delete this.data;
 		delete this.property;
-
-	},
-
-	// Обновление текста
-
-	setText: function(text) {
-
-		this.text = text || '';
-
-		return this;
-
-	},
-
-	// Обновление изображения
-
-	setImage: function(image) {
-
-		// TODO
 
 	},
 
@@ -1344,54 +1372,43 @@ _hud.prototype = {
 
 	set: function(property) {
 
+		// Установка текста
+
+		if(typeof property.text == 'string') {
+
+			this.property.text = property.text;
+			
+		}
+
 		// Установка цвета шрифта
 
-		if(typeof property.color == 'string') {
+		if(typeof property.textColor == 'string') {
 
-			this.property.color = property.color;
+			this.property.textColor = property.textColor;
 			
 		}
 
 		// Установка размера шрифта
 
-		if(typeof property.size == 'number') {
+		if(typeof property.textSize == 'number') {
 
-			this.property.size = property.size;
+			this.property.textSize = property.textSize;
 			
 		}
 
 		// Установка названия шрифта
 
-		if(typeof property.font == 'string') {
+		if(typeof property.textFont == 'string') {
 
-			this.property.font = property.font;
+			this.property.textFont = property.textFont;
 			
 		}
 
 		// Установка стиля шрифта
 
-		if(typeof property.style == 'string') {
+		if(typeof property.textStyle == 'string') {
 
-			this.property.style = property.style;
-			
-		}
-
-		// Установка позиционирования
-
-		if(typeof property.align == 'string') {
-
-			this.property.align = property.align;
-			
-		}
-
-		// Установка позиции
-
-		if(typeof property.position == 'object') {
-
-			this.property.position = {
-				x: (typeof property.position.x == 'number') ? property.position.x << 0 : this.property.position.x,
-				y: (typeof property.position.y == 'number') ? property.position.y << 0 : this.property.position.y
-			};
+			this.property.textStyle = property.textStyle;
 			
 		}
 
@@ -1403,6 +1420,94 @@ _hud.prototype = {
 			
 		}
 
+		// Установка фона
+
+		if(typeof property.background == 'string') {
+
+			this.property.background = property.background;
+			
+		}
+
+		// Установка изображения
+
+		if(typeof property.sprite == 'string') {
+
+			if(!WORLD.sprites[property.sprite]) {
+				console.warn('Спрайт ' + property.sprite + ' не найден в кэше игры');
+			} else {
+
+				this.property.sprite = property.sprite;
+				this.data.sprite = WORLD.sprites[property.sprite];
+
+			}
+
+		}
+
+		// Установка отступа текста
+
+		if(typeof property.textPadding == 'object') {
+
+			if(property.textPadding.length != 4) {
+				console.warn('Неверный формат отступов текста');
+			} else {
+
+				this.property.textPadding = property.textPadding;
+
+			}
+			
+		}
+
+		// Установка позиционирования
+
+		if(typeof property.align == 'string') {
+
+			if(property.align != 'left' && property.align != 'center' && property.align != 'right') {
+				console.warn('Неверный тип позиционирования HUD');
+			} else {
+
+				this.property.align = property.align;
+
+			}	
+			
+		}
+
+		// Установка позиции
+
+		if(typeof property.position == 'object') {
+
+			this.property.position = {
+				x: (typeof property.position.x == 'number') ?
+					property.position.x << 0 :
+					this.property.position.x,
+				y: (typeof property.position.y == 'number') ?
+					property.position.y << 0 :
+					this.property.position.y
+			};
+			
+		}
+
+		// Установка размера
+
+		if(typeof property.size == 'object') {
+
+			this.property.size = {
+				width: (typeof property.size.width == 'number') ?
+					property.size.width << 0 :
+					(property.size.width == 'auto') ?
+						'auto' :
+						this.property.size.width,
+				height: (typeof property.size.height == 'number') ?
+					property.size.height << 0 :
+					(property.size.height == 'auto') ?
+						'auto' :
+						this.property.size.height
+			};
+			
+		}
+
+		__updateHudSize(this, this.property.size);
+		__updateHudPosition(this);
+
 		return this;
 
 	},
@@ -1413,6 +1518,19 @@ _hud.prototype = {
 
 		return clone(this.property[key]);
 
+	},
+
+	// Проверка вхождения HUD в указанные координаты
+
+	isLocated: function(x, y) {
+
+		return (
+			x > this.data.position.x && 
+			x < this.data.position.x + this.data.size.width && 
+			y > this.data.position.y && 
+			y < this.data.position.y + this.data.size.height
+		);
+
 	}
 
 };
@@ -1421,31 +1539,63 @@ _hud.prototype = {
 **	Системные функции HUD
 */
 
-function __updateHudScale(hud) {
+function __updateHudSize(hud, size) {
 
-	var width = WORLD.canvas.measureText(hud.text).width;
+	if(typeof size.width == 'number') {
+
+		hud.data.size.width = clone(size.width) + hud.property.textPadding[3] + hud.property.textPadding[1];
+
+	} else if(size.width == 'auto') {
+
+		WORLD.canvas.font = hud.property.textStyle + ' ' + hud.property.textSize + 'px ' + hud.property.textFont;
+		hud.data.size.width = WORLD.canvas.measureText(hud.property.text).width + hud.property.textPadding[3] + hud.property.textPadding[1];
+
+	}
+
+	if(typeof size.height == 'number') {
+
+		hud.data.size.height = clone(size.height) + hud.property.textPadding[0] + hud.property.textPadding[2];
+
+	} else if(size.height == 'auto') {
+
+		hud.data.size.height = hud.property.textSize * CONST.FONTHEIGHT + hud.property.textPadding[0] + hud.property.textPadding[2];
+
+	}
+
+}
+
+function __updateHudPosition(hud) {
+
+	var positionX = 0,
+		offsetX;
 
 	switch(hud.property.align) {
 
 		case 'left':
-			hud.data.offset.left = hud.property.position.x;
+			positionX = hud.property.position.x;
+			offsetX = hud.property.textPadding[3];
 		break;
 
 		case 'center':
-			hud.data.offset.left = hud.property.position.x - width / 2;
+			positionX = hud.property.position.x - hud.data.size.width / 2;
+			offsetX = 0;
 		break;
 
 		case 'right':
-			hud.data.offset.left = -hud.property.position.x;
+			positionX = hud.property.position.x - hud.data.size.width;
+			offsetX = -hud.property.textPadding[3];
 		break;
 
 	}
 
-	hud.data.offset = {
-		top: hud.property.position.y,
-		bottom: hud.property.position.y + hud.property.size * 0.8,
-		left: hud.data.offset.left,
-		right: hud.data.offset.left + width
+	hud.data.position = {
+		x: positionX,
+		y: hud.property.position.y
+	};
+
+	hud.data.offsetText = {
+		x: offsetX,
+		y: hud.property.textPadding[0]
 	};
 
 }
@@ -1474,155 +1624,143 @@ var KEYS = {
 **	Свойства контроллера клавиш
 */
 
-var keyController = {
-
-	has: []
-
-};
+var keyHas = [];
 
 /*
 **	Контроллер клавиш
 */
 
-window.onmousemove = function(event) {
+function __bindController() {
 
-	EVENTS['onMouseMove'].run({
-		x: event.pageX,
-		y: event.pageY
+	document.addEventListener('keydown', function(event) {
+
+		if(!__isGameKey(event.keyCode) || keyHas[event.keyCode]) {
+			return;
+		}
+
+		keyHas[event.keyCode] = true;
+
+		EVENTS['onKeyDown'].run(event.keyCode);
+
 	});
 
-	for(i in OBJECTS) {
+	document.addEventListener('keyup', function(event) {
 
-		if(isPositionInObject(event.pageX, event.pageY, OBJECTS[i])) {
+		if(!__isGameKey(event.keyCode) || !keyHas[event.keyCode]) {
+			return;
+		}
 
-			if(!OBJECTS[i].data.mouse) {
+		delete keyHas[event.keyCode];
 
-				OBJECTS[i].data.mouse = true;
+		EVENTS['onKeyUp'].run(event.keyCode);
 
-				EVENTS['onMouseEnter'].run(OBJECTS[i], {
-					position: {
-						x: event.pageX,
-						y: event.pageY
-					}
+	});
+
+	WORLD.element.addEventListener('mousemove', function(event) {
+
+		var currentPosition = {
+			x: event.pageX - WORLD.element.offsetLeft,
+			y: event.pageY - WORLD.element.offsetTop
+		};
+
+		EVENTS['onMouseMove'].run({
+			position: currentPosition
+		});
+
+		for(i in OBJECTS) {
+
+			if(OBJECTS[i].isLocated(event.pageX, event.pageY)) {
+
+				if(!OBJECTS[i].data.mouse) {
+
+					OBJECTS[i].data.mouse = true;
+
+					EVENTS['onMouseEnter'].run(OBJECTS[i], {
+						position: currentPosition
+					});
+
+				}
+
+			} else if(OBJECTS[i].data.mouse) {
+
+				OBJECTS[i].data.mouse = false;
+
+				EVENTS['onMouseLeave'].run(OBJECTS[i], {
+					position: currentPosition
 				});
 
 			}
 
-		} else if(OBJECTS[i].data.mouse) {
-
-			OBJECTS[i].data.mouse = false;
-
-			EVENTS['onMouseLeave'].run(OBJECTS[i], {
-				position: {
-					x: event.pageX,
-					y: event.pageY
-				}
-			});
-
 		}
 
-	}
+		for(i in HUD) {
 
-	for(i in HUD) {
+			if(HUD[i].isLocated(event.pageX, event.pageY)) {
 
-		if(isPositionInHud(event.pageX, event.pageY, HUD[i])) {
+				if(!HUD[i].data.mouse) {
 
-			if(!HUD[i].data.mouse) {
+					HUD[i].data.mouse = true;
 
-				HUD[i].data.mouse = true;
+					EVENTS['onHudMouseEnter'].run(HUD[i], {
+						position: currentPosition
+					});
 
-				EVENTS['onHudMouseEnter'].run(HUD[i], {
-					position: {
-						x: event.pageX,
-						y: event.pageY
-					}
+				}
+
+			} else if(HUD[i].data.mouse) {
+
+				HUD[i].data.mouse = false;
+
+				EVENTS['onHudMouseLeave'].run(HUD[i], {
+					position: currentPosition
 				});
 
 			}
 
-		} else if(HUD[i].data.mouse) {
-
-			HUD[i].data.mouse = false;
-
-			EVENTS['onHudMouseLeave'].run(HUD[i], {
-				position: {
-					x: event.pageX,
-					y: event.pageY
-				}
-			});
-
 		}
 
-	}
-
-};
-
-window.onkeydown = function(event) {
-
-	if(!__isGameKey(event.keyCode) || keyController.has[event.keyCode]) {
-		return;
-	}
-
-	keyController.has[event.keyCode] = true;
-
-	EVENTS['onKeyDown'].run(event.keyCode);
-
-};
-
-window.onkeyup = function(event) {
-
-	if(!__isGameKey(event.keyCode) || !keyController.has[event.keyCode]) {
-		return;
-	}
-
-	delete keyController.has[event.keyCode];
-
-	EVENTS['onKeyUp'].run(event.keyCode);
-
-};
-
-window.onclick = function(event) {
-
-	EVENTS['onWorldClicked'].run({
-		position: {
-			x: event.pageX,
-			y: event.pageY
-		}
 	});
 
-	var i;
+	WORLD.element.addEventListener('click', function(event) {
 
-	for(i in OBJECTS) {
+		var currentPosition = {
+			x: event.pageX - WORLD.element.offsetLeft,
+			y: event.pageY - WORLD.element.offsetTop
+		};
 
-		if(isPositionInObject(event.pageX, event.pageY, OBJECTS[i])) {
+		EVENTS['onWorldClicked'].run({
+			position: currentPosition
+		});
 
-			EVENTS['onClicked'].run(OBJECTS[i], {
-				position: {
-					x: event.pageX,
-					y: event.pageY
-				}
-			});
+		var i;
 
-		}
+		for(i in OBJECTS) {
 
-	}
+			if(OBJECTS[i].isLocated(event.pageX, event.pageY)) {
 
-	for(i in HUD) {
+				EVENTS['onClicked'].run(OBJECTS[i], {
+					position: currentPosition
+				});
 
-		if(isPositionInHud(event.pageX, event.pageY, HUD[i])) {
-
-			EVENTS['onHudClicked'].run(HUD[i], {
-				position: {
-					x: event.pageX,
-					y: event.pageY
-				}
-			});
+			}
 
 		}
 
-	}
+		for(i in HUD) {
 
-};
+			if(HUD[i].isLocated(event.pageX, event.pageY)) {
+
+				EVENTS['onHudClicked'].run(HUD[i], {
+					position: currentPosition
+				});
+
+			}
+
+		}
+
+	});
+
+}
 
 /*
 **	Системные функции контроллера клавиш
@@ -1646,7 +1784,7 @@ function __isGameKey(code) {
 **	Рендеринг
 */
 
-window.renderFrames = (function() {
+window.__renderFrames = (function() {
 
 	return window.requestAnimationFrame || 
 	window.webkitRequestAnimationFrame || 
@@ -1669,7 +1807,9 @@ function random(min, max, noround) {
 
 	var r = min - 0.5 + Math.random() * (max - min + 1);
 
-	return noround ? r : Math.round(r);
+	return noround ?
+		r :
+		Math.round(r);
 
 }
 
@@ -1683,7 +1823,9 @@ function anglePoint(fromX, fromY, x, y) {
 
 	var angle = Math.atan2(fromY - y, x - fromX) * CONST.DEG;
 
-	return (angle < 0) ? angle + 360 : angle;
+	return (angle < 0) ?
+		angle + 360 :
+		angle;
 
 }
 
@@ -1696,7 +1838,9 @@ function clone(object) {
 	var temp = new object.constructor(); 
 
 	for(var k in object) {
-		temp[k] = (typeof object[k] == 'object') ? clone(object[k]) : object[k];
+		temp[k] = (typeof object[k] == 'object') ?
+			clone(object[k]) :
+			object[k];
 	}
 
 	return temp;

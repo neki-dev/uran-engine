@@ -8,6 +8,7 @@ cacheSprites([
 	'asteroid-medium.png',
 	'asteroid-big.png',
 	'star.png',
+	'restart.png',
 	'death.png'
 ]);
 
@@ -79,13 +80,14 @@ createWorld('world', [ 1280, 800 ], function() {
 		}
 	];
 
-	var hudScore = createHud('ОЧКИ: 0', {
+	var hudScore = createHud({
+		text: 'Очки: 0',
 		position: {
 			x: 10,
 			y: 13
 		},
-		size: 22,
-		style: 'bold'
+		textSize: 22,
+		textStyle: 'bold'
 	});
 
 	var hudSuper = createHud({
@@ -94,32 +96,55 @@ createWorld('world', [ 1280, 800 ], function() {
 			x: 10,
 			y: 43
 		},
-		size: 22,
-		style: 'bold'
+		textSize: 22,
+		textStyle: 'bold'
 	});
 
-	var player = createObject('Player', {
-		polygons: [
-			[   0,  64 ],
-			[  52,  62 ],
-			[  62,   0 ],
-			[  72,  62 ],
-			[ 128,  64 ],
-			[ 128,  78 ],
-			[  84,  92 ],
-			[  79, 116 ],
-			[  45, 116 ],
-			[  40,  92 ],
-			[   0,  78 ]
-		],
+	var hudLoose = createHud({
+		text: 'ВЫ ПРОИГРАЛИ',
 		position: {
 			x: 640,
-			y: 600
+			y: 380
 		},
-		velocity: 3,
-		fasten: true
-	})
-	.animate('player.png', 5, 5, true);
+		textSize: 50,
+		textStyle: 'bold',
+		align: 'center',
+		toggle: false
+	});
+
+	var player = createPlayer();
+
+	var hudRestart = createHud({
+		text: 'РЕСТАРТ',
+		position: {
+			x: 1270,
+			y: 13
+		},
+		textSize: 12,
+		textStyle: 'bold',
+		sprite: 'restart.png',
+		align: 'right',
+		textPadding: [ 7, 5, 4, 5 ]
+	});
+
+	// FPS vars
+
+	var frames = 0;
+		startTime = Date.now(), 
+		prevTime = startTime;
+
+	// FPS hud
+
+	var hudFPS = createHud({
+		position: {
+			x: 10,
+			y: 772
+		},
+		textSize: 18,
+		textColor: 'rgba(255,255,255,0.7)'
+	});
+
+	//
 
 	onKeyHas(function(key) {
 
@@ -159,17 +184,23 @@ createWorld('world', [ 1280, 800 ], function() {
 			positionPlayer.y -= 61;
 
 			createObject('Shoot', {
-				size: (SUPER ? { 
-					width: 4, 
-					height: 10 
-				} : { 
-					width: 2, 
-					height: 4 
-				}),
-				sprite: SUPER ? 'shoot-super.png' : 'shoot.png',
+				size: SUPER ?
+					{ 
+						width: 4, 
+						height: 10 
+					} :
+					{ 
+						width: 2, 
+						height: 4 
+					},
+				sprite: SUPER ?
+					'shoot-super.png' :
+					'shoot.png',
 				position: positionPlayer,
 				velocity: 7
 			});
+
+
 
 		}
 
@@ -192,25 +223,6 @@ createWorld('world', [ 1280, 800 ], function() {
 		}
 
 	});
-
-	// FPS vars
-
-	var frames = 0;
-		startTime = Date.now(), 
-		prevTime = startTime;
-
-	// FPS hud
-
-	var hudFPS = createHud('', {
-		position: {
-			x: 10,
-			y: 772
-		},
-		size: 18,
-		color: 'rgba(255,255,255,0.7)'
-	});
-
-	//
 
 	onUpdate(function(data) {
 
@@ -254,7 +266,9 @@ createWorld('world', [ 1280, 800 ], function() {
 			fps = Math.ceil((frames * 1000) / (time - prevTime) * 100) / 100;
 			prevTime = time;
 			frames = 0;
-     		hudFPS.setText('FPS: ' + fps);
+     		hudFPS.set({
+     			text: 'FPS: ' + fps
+     		});
 		}
 
 		//
@@ -340,18 +354,15 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			setTimeout(function() {
 
-				player.destroy();
+				if(DEATH) {
 
-				createHud('ВЫ ПРОИГРАЛИ', {
-					position: {
-						x: 620,
-						y: 400
-					},
-					size: 50,
-					color: '#fff',
-					style: 'bold',
-					align: 'center'
-				});
+					player.destroy();
+
+					hudLoose.set({
+						toggle: true
+					});
+
+				}
 
 			}, 2000);
 
@@ -367,7 +378,9 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			SCORE += 3;
 
-			hudScore.setText('Очки: ' + SCORE);
+			hudScore.set({
+				text: 'Очки: ' + SCORE
+			});
 
 		}
 
@@ -381,7 +394,8 @@ createWorld('world', [ 1280, 800 ], function() {
 
 			SUPER = true;
 
-			hudSuper.setText('Супер режим: 10 сек').set({
+			hudSuper.set({
+				text: 'Супер режим: 10 сек',
 				toggle: true
 			});
 
@@ -397,12 +411,59 @@ createWorld('world', [ 1280, 800 ], function() {
 		this.destroy();
 
 		SCORE++;
+		hudScore.set({
+			text: 'Очки: ' + SCORE
+		});
 
-		hudScore.setText('Очки: ' + SCORE);
+	});
+
+	onHudMouseEnter(hudRestart, function() {
+
+		setCursor('pointer');
+
+	});
+
+	onHudMouseLeave(hudRestart, function() {
+
+		setCursor('default');
+
+	});
+
+	onHudClicked(hudRestart, function() {
+
+		SCORE = 0;
+		hudScore.set({
+			text: 'Очки: 0'
+		});
+
+		hudSuper.set({
+			toggle: false
+		});
+		SUPER = false;
+
+		hudLoose.set({
+			toggle: false
+		});
+
+		DEATH = false;
+
+		BIO = false;
+
+		var objects = selectObjects();
+
+		for(var i in objects) {
+			objects[i].destroy();
+		}
+
+		player = createPlayer();
 
 	});
 
 	function superTimeout() {
+
+		if(!SUPER) {
+			return;
+		}
 
 		SUPER_TIME--;
 
@@ -412,9 +473,38 @@ createWorld('world', [ 1280, 800 ], function() {
 			});
 			SUPER = false;
 		} else {
-			hudSuper.setText('Супер режим: ' + SUPER_TIME + ' сек');
+			hudSuper.set({
+				text: 'Супер режим: ' + SUPER_TIME + ' сек'
+			});
 			setTimeout(superTimeout, 1000);
 		}
+
+	}
+
+	function createPlayer() {
+
+		return createObject('Player', {
+			polygons: [
+				[   0,  64 ],
+				[  52,  62 ],
+				[  62,   0 ],
+				[  72,  62 ],
+				[ 128,  64 ],
+				[ 128,  78 ],
+				[  84,  92 ],
+				[  79, 116 ],
+				[  45, 116 ],
+				[  40,  92 ],
+				[   0,  78 ]
+			],
+			position: {
+				x: 640,
+				y: 600
+			},
+			velocity: 3,
+			fasten: true
+		})
+		.animate('player.png', 5, 5, true);
 
 	}
 
