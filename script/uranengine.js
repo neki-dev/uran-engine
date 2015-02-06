@@ -1926,4 +1926,5 @@ function clone(object) {
 	}
 
 	return temp;
+
 }
