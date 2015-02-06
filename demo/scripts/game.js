@@ -152,19 +152,19 @@ createWorld('world', [ 1280, 800 ], function() {
 			return;
 		}
 
-		if(key == KEYS.UP) {
+		if(key == KEYS.LETTER['w']) {
 			player.move(90);
 		}
 
-		if(key == KEYS.DOWN) {
+		if(key == KEYS.LETTER['s']) {
 			player.move(270);
 		}
 
-		if(key == KEYS.RIGHT) {
+		if(key == KEYS.LETTER['d']) {
 			player.move(0);
 		}
 
-		if(key == KEYS.LEFT) {
+		if(key == KEYS.LETTER['a']) {
 			player.move(180);
 		}
 

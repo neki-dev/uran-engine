@@ -1,7 +1,7 @@
 /*
 
 	uranEngine 
-	Текущая версия: 1.7.1
+	Текущая версия: 1.7.2
 	_______________________________
 
 	uranengine.ru
@@ -1115,7 +1115,7 @@ function __updateWorld() {
 
 	for(i in HUD) {
 
-		if(!HUD[i].property.text.length || !HUD[i].property.toggle) {
+		if(!HUD[i].property.text || !HUD[i].property.toggle) {
 			continue;
 		}
 
@@ -1327,12 +1327,14 @@ function _hud(text) {
 	};
 
 	this.property = {
-		text: '',
+		text: null,
 		textColor: '#fff',
 		textSize: 14,
 		textFont: 'Arial',
 		textStyle: '',
-		textPadding: [ 0, 0, 0, 0 ],
+		textPadding: [ 
+			0, 0, 0, 0
+		],
 		sprite: null,
 		toggle: true,
 		align: 'left',
@@ -1606,17 +1608,83 @@ function __updateHudPosition(hud) {
 
 var KEYS = {
 
+	BACKSPACE: 8,
 	TAB: 9,
 	ENTER: 13,
 	SHIFT: 16,
-	ALT: 18,
-	ESC: 27,
-	SPACE: 32,
 	CTRL: 17,
-	DOWN: 83,
-	UP: 87,
-	RIGHT: 68,
-	LEFT: 65
+	ALT: 18,
+	CAPSLOCK: 20,
+	ESCAPE: 27,
+	SPACE: 32,
+	PAGEUP: 33,
+	PAGEDOWN: 34,
+	END: 35,
+	HOME: 36,
+	LEFT: 37,
+	UP: 38,
+	RIGHT: 39,
+	DOWN: 40,
+	INSERT: 45,
+	DELETE: 46,
+
+	NUMBER: {
+		'0': 48,
+		'1': 49,
+		'2': 50,
+		'3': 51,
+		'4': 52,
+		'5': 53,
+		'6': 54,
+		'7': 55,
+		'8': 56,
+		'9': 57
+	},
+
+	F: {
+		'1': 112,
+		'2': 113,
+		'3': 114,
+		'4': 115,
+		'5': 116,
+		'6': 117,
+		'7': 118,
+		'8': 119,
+		'9': 120,
+		'10': 121,
+		'11': 122,
+		'12': 123	
+	},
+
+	LETTER: {
+		'a': 65,
+		'b': 66,
+		'c': 67,
+		'd': 68,
+		'e': 69,
+		'f': 70,
+		'g': 71,
+		'h': 72,
+		'i': 73,
+		'j': 74,
+		'k': 75,
+		'l': 76,
+		'm': 77,
+		'n': 78,
+		'o': 79,
+		'p': 80,
+		'q': 81,
+		'r': 82,
+		's': 83,
+		't': 84,
+		'u': 85,
+		'v': 86,
+		'w': 87,
+		'x': 88,
+		'y': 89,
+		'z': 90
+	}
+	
 
 };
 
@@ -1770,8 +1838,22 @@ function __isGameKey(code) {
 
 	for(var i in KEYS) {
 
-		if(code == KEYS[i]) {
-			return true;
+		if(typeof KEYS[i] == 'number') {
+
+			if(code == KEYS[i]) {
+				return true;
+			}
+
+		} else {
+
+			for(var j in KEYS[i]) {
+
+				if(code == KEYS[i][j]) {
+					return true;
+				}
+
+			}
+
 		}
 
 	}
@@ -1844,5 +1926,4 @@ function clone(object) {
 	}
 
 	return temp;
-
 }
