@@ -1175,12 +1175,13 @@ var EVENT_LIST = [
 	'onUpdate',
 	'onPolygon',
 
-	'onWorldClicked',
 	'onWorldUpdate',
 
 	'onKeyHas',
 	'onKeyDown',
 	'onKeyUp',
+
+	'onMouseClicked',
 	'onMouseMove',
 
 	'onHudMouseEnter',
@@ -1796,7 +1797,7 @@ function __bindController() {
 			y: event.pageY - WORLD.element.offsetTop
 		};
 
-		EVENTS['onWorldClicked'].run({
+		EVENTS['onMouseClicked'].run({
 			position: currentPosition
 		});
 
