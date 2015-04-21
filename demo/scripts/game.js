@@ -81,7 +81,7 @@ createWorld('world', [ 1280, 800 ], function() {
 	];
 
 	var hudScore = createHud({
-		text: 'Очки: 0',
+		text: 'ОЧКИ • 0',
 		position: {
 			x: 10,
 			y: 13
@@ -124,7 +124,8 @@ createWorld('world', [ 1280, 800 ], function() {
 		textStyle: 'bold',
 		sprite: 'restart.png',
 		align: 'right',
-		textPadding: [ 7, 5, 4, 5 ]
+		textPadding: [ 7, 5, 4, 5 ],
+		background: '#0066CC'
 	});
 
 	// FPS vars
@@ -141,7 +142,8 @@ createWorld('world', [ 1280, 800 ], function() {
 			y: 772
 		},
 		textSize: 18,
-		textColor: 'rgba(255,255,255,0.7)'
+		textColor: '#fff',
+		opacity: 0.6
 	});
 
 	//
@@ -206,15 +208,15 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	});
 
-	onMove(function(data) {
+	onObjectMove(function(data) {
 
 		if(this.name != 'Player') {
 
-			if(!this.isVisible()) {
+			if(!this.onMap()) {
 
 				this.destroy();
 
-				if(BIO && !BIO.has()) {
+				if(BIO && !there(BIO)) {
 					delete BIO;
 				}
 
@@ -224,7 +226,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	});
 
-	onUpdate(function(data) {
+	onObjectUpdate(function(data) {
 
 		switch(this.name) {
 
@@ -330,7 +332,7 @@ createWorld('world', [ 1280, 800 ], function() {
 		
 	});
 
-	onCollision('Shoot', function(data) {
+	onObjectCollision('Shoot', function(data) {
 
 		this.destroy();
 
@@ -342,7 +344,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	});
 
-	onCollision('Asteroid', function(data) {
+	onObjectCollision('Asteroid', function(data) {
 
 		if(data.object.name == 'Player' && !DEATH) {
 			
@@ -370,7 +372,7 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	});
 
-	onCollision('Star', function(data) {
+	onObjectCollision('Star', function(data) {
 
 		if(data.object.name == 'Player' && !DEATH) {
 
@@ -379,14 +381,14 @@ createWorld('world', [ 1280, 800 ], function() {
 			SCORE += 3;
 
 			hudScore.set({
-				text: 'Очки: ' + SCORE
+				text: 'ОЧКИ • ' + SCORE
 			});
 
 		}
 
 	});
 
-	onCollision('Bio', function(data) {
+	onObjectCollision('Bio', function(data) {
 
 		if(data.object.name == 'Player' && !DEATH) {
 
@@ -406,34 +408,42 @@ createWorld('world', [ 1280, 800 ], function() {
 
 	});
 
-	onDeath('Asteroid', function(data) {
+	onObjectDeath('Asteroid', function(data) {
 
 		this.destroy();
 
 		SCORE++;
 		hudScore.set({
-			text: 'Очки: ' + SCORE
+			text: 'ОЧКИ • ' + SCORE
 		});
 
 	});
 
-	onHudMouseEnter(hudRestart, function() {
+	onMouseEnterHud(hudRestart, function() {
 
 		setCursor('pointer');
 
+		this.set({
+			sprite: null
+		});
+
 	});
 
-	onHudMouseLeave(hudRestart, function() {
+	onMouseLeaveHud(hudRestart, function() {
 
 		setCursor('default');
 
+		this.set({
+			sprite: 'restart.png'
+		});
+
 	});
 
-	onHudClicked(hudRestart, function() {
+	onClickedHud(hudRestart, function() {
 
 		SCORE = 0;
 		hudScore.set({
-			text: 'Очки: 0'
+			text: 'ОЧКИ • 0'
 		});
 
 		hudSuper.set({
