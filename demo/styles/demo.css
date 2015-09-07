@@ -1,24 +1,8 @@
 * {
-	outline: none;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
 	margin: 0;
-	border: none;
 	padding: 0;
-}
-
-html,
-body {
-	width: 100%;
-	height: 100%;
-}
-
-body {
-	background: #eee;
-	font: 12px 'Lucida Grande', 'Arial', 'Tahoma', 'Verdana', 'Sans-serif';
-	color: #444;
-}
-
-span {
-	font-size: 18px;
-	padding: 15px;
-	display: block;
 }

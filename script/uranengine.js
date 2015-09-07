@@ -1,7 +1,7 @@
 /*
 
 	uranEngine 
-	Текущая версия: 1.8.0
+	Текущая версия: 1.8.1
 	_______________________________
 
 	uranengine.ru
@@ -19,15 +19,17 @@ var CONST = {
 	RAD: Math.PI / 180,
 	DEG: 180 / Math.PI,
 	FONTHEIGHT: 0.8,
-	DEBUG: false
+	DEBUG: false,
+	FULL_SIZE: 'fs'
 
 };
 
 /*
-**
+**	Приватные глобальные переменные
 */
 
-var lastId = 0;
+var lastId = 0,
+	onceLog = [];
 
 /*
 **	Массив объектов
@@ -78,6 +80,7 @@ function _object(name) {
 	this.property = {
 		fasten: false,
 		sprite: null,
+		background: null,
 		health: 100,
 		collision: false,
 		velocity: {
@@ -96,10 +99,12 @@ function _object(name) {
 			height: 0,
 			width: 0
 		},
-		data: []
+		data: [],
+		index: 1
 	};
 	
 	OBJECTS.push(this);
+	__sortByIndex(OBJECTS);
 
 }
 
@@ -123,7 +128,7 @@ _object.prototype = {
 
 	set: function(property) {
 
-		// Установка размеров объекта
+		// Установка размеров
 
 		if(typeof property.size == 'object') {
 
@@ -160,7 +165,7 @@ _object.prototype = {
 
 		}
 
-		// Установка полигонов объекта
+		// Установка полигонов
 
 		if(typeof property.polygons == 'object') {
 
@@ -205,7 +210,7 @@ _object.prototype = {
 
 		}
 
-		// Установка угла поворота объекта
+		// Установка угла поворота
 
 		if(typeof property.angle == 'number') {
 
@@ -221,7 +226,7 @@ _object.prototype = {
 
 		}
 
-		// Установка спрайта объекта
+		// Установка спрайта
 
 		if(typeof property.sprite == 'string') {
 
@@ -238,7 +243,19 @@ _object.prototype = {
 
 		}
 
-		// Установка удара объекта
+		// Установка фона
+
+		if(typeof property.background == 'string') {
+
+			this.property.background = property.background;
+			
+		} else if(property.background === null) {
+
+			this.property.background = null;
+
+		}
+
+		// Установка осязаемости
 
 		if(typeof property.collision == 'boolean') {
 
@@ -262,7 +279,7 @@ _object.prototype = {
 			
 		}
 
-		// Установка привязки объекта к миру
+		// Установка привязки к миру
 
 		if(typeof property.fasten == 'boolean') {
 
@@ -270,7 +287,17 @@ _object.prototype = {
 
 		}
 
-		// Установка жизни объекта
+		// Установка индекса поверхности
+
+		if(typeof property.index == 'number') {
+
+			this.property.index = property.index;
+
+			__sortByIndex(OBJECTS);
+
+		}
+
+		// Установка жизни
 
 		if(typeof property.health == 'number') {
 
@@ -289,7 +316,7 @@ _object.prototype = {
 
 		}
 
-		// Установка скорости объекта
+		// Установка скорости
 
 		if(typeof property.velocity == 'object') {
 		
@@ -311,16 +338,20 @@ _object.prototype = {
 
 		}
 
-		// Установка координат объекта
+		// Установка координат
 
 		if(typeof property.position == 'object') {
 
 			this.property.position = {
 				x: (typeof property.position.x == 'number') ?
-					property.position.x << 0 :
+					((property.position.x < 0 && !property.position.stuck) ?
+						(WORLD.element.width + property.position.x) << 0 :
+						property.position.x << 0) :
 					this.property.position.x,
 				y: (typeof property.position.y == 'number') ?
-					property.position.y << 0 :
+					((property.position.y < 0 && !property.position.stuck) ?
+						(WORLD.element.height + property.position.y) << 0 :
+						property.position.y << 0) :
 					this.property.position.y
 			};
 
@@ -460,7 +491,8 @@ _object.prototype = {
 
 		var newPosition = {
 			x: (this.property.position.x + this.property.velocity.x * Math.cos(angle * -CONST.RAD)) << 0,
-			y: (this.property.position.y + this.property.velocity.y * Math.sin(angle * -CONST.RAD)) << 0
+			y: (this.property.position.y + this.property.velocity.y * Math.sin(angle * -CONST.RAD)) << 0,
+			stuck: true
 		};
 
 		if(this.property.fasten) {
@@ -753,6 +785,12 @@ function createWorld(canvasID, size, callback) {
 
 		WORLD.canvas = WORLD.element.getContext('2d');
 
+		if(size == CONST.FULL_SIZE) {
+			size = [ document.documentElement.clientWidth, document.documentElement.clientHeight ];
+			WORLD.element.style.position = 'absolute';
+			WORLD.element.setAttribute('data-fullsize', true);
+		}
+
 		WORLD.element.width = size[0];
 		WORLD.element.height = size[1];
 
@@ -971,6 +1009,10 @@ function drawMap(sprite) {
 
 		for(var i = 0; i < 2; ++i) {
 
+			if(!WORLD.map.position[i]) {
+				continue;
+			}
+
 			var size = [
 				WORLD.element.width - WORLD.map.position[i][0],
 				WORLD.element.height - WORLD.map.position[i][1]
@@ -987,17 +1029,15 @@ function drawMap(sprite) {
 					WORLD.element.height :
 					size[1];
 
-			if(WORLD.map.position[i]) {
-				WORLD.canvas.drawImage(
-					WORLD.map.sprite, 0, 0,
-					mapWidth, 
-					mapHeight,
-					WORLD.map.position[i][0], 
-					WORLD.map.position[i][1],
-					mapWidth, 
-					mapHeight
-				);
-			}
+			WORLD.canvas.drawImage(
+				WORLD.map.sprite, 0, 0,
+				mapWidth, 
+				mapHeight,
+				WORLD.map.position[i][0], 
+				WORLD.map.position[i][1],
+				mapWidth, 
+				mapHeight
+			);
 
 		}
 
@@ -1010,6 +1050,7 @@ function drawMap(sprite) {
 function moveMap(angle, speed) {
 
 	if(!WORLD.map) {
+		__consoleOnce('notdrawmap', 'Движение карты недопустимо: Не вызвана функция drawMap', 'warn');
 		return;
 	}
 
@@ -1023,7 +1064,7 @@ function moveMap(angle, speed) {
 		} else if(angle == 270) {
 			WORLD.map.position[1] = [ 0, -WORLD.element.height ];
 		} else {
-			console.warn('');
+			__consoleOnce('invalidmapangle', 'Движение карты недопустимо: Некорректный угол движения', 'warn');
 			return;
 		}
 	}
@@ -1089,6 +1130,16 @@ function __updateWorld() {
 		WORLD.canvas.globalAlpha = OBJECTS[i].property.opacity;
 		WORLD.canvas.translate(OBJECTS[i].property.position.x, OBJECTS[i].property.position.y);
 		WORLD.canvas.rotate(OBJECTS[i].data.angle);
+
+		if(OBJECTS[i].property.background) {
+			WORLD.canvas.fillStyle = OBJECTS[i].property.background;
+			WORLD.canvas.fillRect(
+				-OBJECTS[i].property.size.width / 2, 
+				-OBJECTS[i].property.size.height / 2, 
+				OBJECTS[i].property.size.width, 
+				OBJECTS[i].property.size.height
+			);
+		}
 
 		if(OBJECTS[i].data.animate.animated) {
 
@@ -1394,9 +1445,7 @@ function _hud(name, text) {
 		textSize: 14,
 		textFont: 'Arial',
 		textStyle: '',
-		textPadding: [ 
-			0, 0, 0, 0
-		],
+		textPadding: [ 0, 0, 0, 0 ],
 		sprite: null,
 		toggle: true,
 		align: 'left',
@@ -1410,10 +1459,12 @@ function _hud(name, text) {
 		size: {
 			width: 'auto',
 			height: 'auto'
-		}
+		},
+		index: 1
 	}
 
 	HUD.push(this);
+	__sortByIndex(HUD);
 
 }
 
@@ -1493,6 +1544,16 @@ _hud.prototype = {
 			
 		}
 
+		// Установка индекса поверхности
+
+		if(typeof property.index == 'number') {
+
+			this.property.index = property.index;
+
+			__sortByIndex(HUD);
+
+		}
+
 		// Установка фона
 
 		if(typeof property.background == 'string') {
@@ -1567,16 +1628,20 @@ _hud.prototype = {
 			
 		}
 
-		// Установка позиции
+		// Установка координат
 
 		if(typeof property.position == 'object') {
 
 			this.property.position = {
 				x: (typeof property.position.x == 'number') ?
-					property.position.x << 0 :
+					((property.position.x < 0) ?
+						(WORLD.element.width + property.position.x) << 0 :
+						property.position.x << 0) :
 					this.property.position.x,
 				y: (typeof property.position.y == 'number') ?
-					property.position.y << 0 :
+					((property.position.y < 0) ?
+						(WORLD.element.height + property.position.y) << 0 :
+						property.position.y << 0) :
 					this.property.position.y
 			};
 			
@@ -2069,6 +2134,47 @@ function __isPointInPolygons(element, x, y) {
 	}
 
 	return inside;
+
+}
+
+function __consoleOnce(key, text, method) {
+
+	if(onceLog[key]) {
+		return;
+	}
+
+	switch(method) {
+		case 'warn':
+			console.warn(text);
+		break;
+		case 'info':
+			console.info(text);
+		break;
+		case 'error':
+			console.error(text);
+		break;
+		default:
+			console.log(text);
+		break;
+	}
+
+	onceLog[key] = true;
+
+}
+
+function __sortByIndex(array) {
+
+	var cache;
+
+	for(var i = 0; i < array.length; ++i) {
+		for(var k = 0; k < array.length - i; ++k) {
+			if(array[i].property.index < array[k].property.index) {
+				cache = array[i];
+				array[i] = array[k];
+				array[k] = cache;
+			}
+		}
+	}
 
 }
 

@@ -18,7 +18,7 @@ cacheSounds([
 	'boom.wav'
 ]);
 
-createWorld('world', [ 1280, 800 ], function() {
+createWorld('world', CONST.FULL_SIZE, function() {
 
 	drawMap('space.png');
 
@@ -103,8 +103,8 @@ createWorld('world', [ 1280, 800 ], function() {
 	var hudLoose = createHud({
 		text: 'ВЫ ПРОИГРАЛИ',
 		position: {
-			x: 640,
-			y: 380
+			x: WORLD.element.width / 2,
+			y: WORLD.element.height / 2
 		},
 		textSize: 50,
 		textStyle: 'bold',
@@ -117,7 +117,7 @@ createWorld('world', [ 1280, 800 ], function() {
 	var hudRestart = createHud({
 		text: 'РЕСТАРТ',
 		position: {
-			x: 1270,
+			x: -10,
 			y: 13
 		},
 		textSize: 12,
@@ -139,7 +139,7 @@ createWorld('world', [ 1280, 800 ], function() {
 	var hudFPS = createHud({
 		position: {
 			x: 10,
-			y: 772
+			y: -25
 		},
 		textSize: 18,
 		textColor: '#fff',
@@ -287,7 +287,8 @@ createWorld('world', [ 1280, 800 ], function() {
 				sprite: 'star.png',
 				position: {
 					x: random(100, 1180), 
-					y: -5
+					y: -5,
+					stuck: true
 				},
 				velocity: random(1, 3)
 			});
@@ -304,7 +305,8 @@ createWorld('world', [ 1280, 800 ], function() {
 				sprite: 'bio.png',
 				position: {
 					x: random(100, 1180), 
-					y: -11
+					y: -11,
+					stuck: true
 				},
 				velocity: random(2, 3)
 			});
@@ -319,7 +321,8 @@ createWorld('world', [ 1280, 800 ], function() {
 				sprite: data.sprite,
 				position: {
 					x: random(100, 1180), 
-					y: -data.height / 2 + 1
+					y: -data.height / 2 + 1,
+					stuck: true
 				},
 				velocity: random(1, 3),
 				polygons: data.polygons,
@@ -508,8 +511,8 @@ createWorld('world', [ 1280, 800 ], function() {
 				[   0,  78 ]
 			],
 			position: {
-				x: 640,
-				y: 600
+				x: WORLD.element.width / 2,
+				y: WORLD.element.height / 2
 			},
 			velocity: 3,
 			fasten: true
