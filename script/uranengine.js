@@ -1,7 +1,7 @@
 /*
 
 	uranEngine 
-	Текущая версия: 1.8.1
+	Текущая версия: 1.8.2
 	_______________________________
 
 	uranengine.ru
@@ -20,7 +20,8 @@ var CONST = {
 	DEG: 180 / Math.PI,
 	FONTHEIGHT: 0.8,
 	DEBUG: false,
-	FULL_SIZE: 'fs'
+	FULL_SIZE: 'fs',
+	VOLUME: 0.5
 
 };
 
@@ -28,8 +29,8 @@ var CONST = {
 **	Приватные глобальные переменные
 */
 
-var lastId = 0,
-	onceLog = [];
+var __lastId = 0,
+	__onceLog = [];
 
 /*
 **	Массив объектов
@@ -45,7 +46,7 @@ function _object(name) {
 
 	this.type = 'object';
 	this.name = name;
-	this.id = ++lastId;
+	this.id = ++__lastId;
 
 	this.data = {
 		polygons: {
@@ -74,7 +75,11 @@ function _object(name) {
 		},
 		angle: 0,
 		sprite: null,
-		mouse: false
+		mouse: false,
+		braking: {
+			x: null,
+			y: null
+		}
 	};
 
 	this.property = {
@@ -489,10 +494,22 @@ _object.prototype = {
 
 	move: function(angle) {
 
+		var cos = Math.cos(angle * -CONST.RAD),
+			sin = Math.sin(angle * -CONST.RAD);
+
+		if(cos === 0 && sin === 0) {
+			return this;
+		}
+
 		var newPosition = {
-			x: (this.property.position.x + this.property.velocity.x * Math.cos(angle * -CONST.RAD)) << 0,
-			y: (this.property.position.y + this.property.velocity.y * Math.sin(angle * -CONST.RAD)) << 0,
+			x: (this.property.position.x + (this.data.braking.x || this.property.velocity.x) * cos) << 0,
+			y: (this.property.position.y + (this.data.braking.y || this.property.velocity.y) * sin) << 0,
 			stuck: true
+		};
+
+		this.data.braking = {
+			x: null,
+			y: null
 		};
 
 		if(this.property.fasten) {
@@ -539,9 +556,26 @@ _object.prototype = {
 
 	moveTo: function(x, y) {
 
-		this.move(anglePoint(this.property.position.x, this.property.position.y, x, y));
+		if(this.property.position.x == x && this.property.position.y == y) {
+			return this;
+		}
 
-		return this;
+		var vector = vectorLength(this.property.position, {
+			x: x,
+			y: y
+		});
+
+		if(vector < this.property.velocity.x) {
+			this.data.braking.x = vector;
+		}
+		if(vector < this.property.velocity.y) {
+			this.data.braking.y = vector;
+		}
+
+		return this.move(anglePoint(this.property.position, {
+			x: x, 
+			y: y
+		}));
 
 	},
 
@@ -967,13 +1001,14 @@ function cacheSounds(path, sounds) {
 
 // Воспроизведение звука
 
-function playSound(sound) {
+function playSound(sound, volume) {
 
 	if(!WORLD.sounds[sound]) {
 		console.warn('Звук ' + sound + ' не найден в кэше игры');
 		return;
 	}
 
+	WORLD.sounds[sound].volume = volume || CONST.VOLUME;
 	WORLD.sounds[sound].load();
 	WORLD.sounds[sound].play();
 
@@ -1409,7 +1444,7 @@ function _hud(name, text) {
 
 	this.type = 'hud';
 	this.name = name;
-	this.id = ++lastId;
+	this.id = ++__lastId;
 
 	this.data = {
 		mouse: false,
@@ -1969,7 +2004,7 @@ function __bindController() {
 
 		for(var i = 0; i < OBJECTS.length; ++i) {
 
-			if(OBJECTS[i].isLocated(event.pageX, event.pageY) && OBJECTS[i].property.toggle) {
+			if(OBJECTS[i].isLocated(currentPosition.x, currentPosition.y) && OBJECTS[i].property.toggle) {
 
 				if(!OBJECTS[i].data.mouse) {
 
@@ -1995,7 +2030,7 @@ function __bindController() {
 
 		for(var i = 0; i < HUD.length; ++i) {
 
-			if(HUD[i].isLocated(event.pageX, event.pageY) && HUD[i].property.toggle) {
+			if(HUD[i].isLocated(currentPosition.x, currentPosition.y) && HUD[i].property.toggle) {
 
 				if(!HUD[i].data.mouse) {
 
@@ -2033,7 +2068,7 @@ function __bindController() {
 		});
 
 		for(var i = 0; i < OBJECTS.length; ++i) {
-			if(OBJECTS[i].isLocated(event.pageX, event.pageY) && OBJECTS[i].property.toggle) {
+			if(OBJECTS[i].isLocated(currentPosition.x, currentPosition.y) && OBJECTS[i].property.toggle) {
 				EVENTS['onClickedObject'].run(OBJECTS[i], {
 					position: currentPosition
 				});
@@ -2041,7 +2076,7 @@ function __bindController() {
 		}
 
 		for(var i = 0; i < HUD.length; ++i) {
-			if(HUD[i].isLocated(event.pageX, event.pageY) && HUD[i].property.toggle) {
+			if(HUD[i].isLocated(currentPosition.x, currentPosition.y) && HUD[i].property.toggle) {
 				EVENTS['onClickedHud'].run(HUD[i], {
 					position: currentPosition
 				});
@@ -2139,7 +2174,7 @@ function __isPointInPolygons(element, x, y) {
 
 function __consoleOnce(key, text, method) {
 
-	if(onceLog[key]) {
+	if(__onceLog[key]) {
 		return;
 	}
 
@@ -2158,7 +2193,7 @@ function __consoleOnce(key, text, method) {
 		break;
 	}
 
-	onceLog[key] = true;
+	__onceLog[key] = true;
 
 }
 
@@ -2230,9 +2265,9 @@ function vectorLength(a, b) {
 
 }
 
-function anglePoint(fromX, fromY, x, y) {
+function anglePoint(a, b) {
 
-	var angle = Math.atan2(fromY - y, x - fromX) * CONST.DEG;
+	var angle = Math.atan2((a.y || a[1]) - (b.y || b[1]), (b.x || b[0]) - (a.x || a[0])) * CONST.DEG;
 
 	return (angle < 0) ?
 		angle + 360 :
