@@ -14,34 +14,22 @@
 1. Затем в распакованном архиве запустите файл install.bat и дождитесь установки всех модулей, необходимых для работы движка.
 1. Теперь Вы можете приступить к разработке игры, открыв файл script.js в директории game.
 
-### Структура кода
+### Структура
 
-_Предварительный код_
+_Сервер_
 ```javascript
 // Загрузка библиотеки
 var $ = require('../engine/server/uranengine');
 
-// Кеширование файлов игры
-$.cacheSprites([ 
-	'background.png', 
-	//...
-]);
-$.cacheSounds([
-	//...
-]);
+// Код игры
+// ...
 ```
-_Создание сцен_
-```javascript
-var sceneMain = $.createScene('main.xml', function() {
-	//...
-});
-//...
-```
-_Регистрация событий_
-```javascript
-$.event('onPlayerConnect', function() {
-	this.setScene(sceneMain);
-	//...
-});
-//...
+_Клиент_
+```html
+<!-- Создание элемента Canvas -->
+<canvas id='uranEngine'></canvas>
+
+<!-- Загрузка функционала -->
+<script type='text/javascript' src='/socket.io/socket.io.js'></script>
+<script type='text/javascript' src='/engine/client/uranengine.js'></script>
 ```
