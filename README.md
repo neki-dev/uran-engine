@@ -19,7 +19,7 @@
 _Предварительный код_
 ```javascript
 // Загрузка библиотеки
-var $ = require('../engine/uranengine');
+var $ = require('../engine/server/uranengine');
 
 // Кеширование файлов игры
 $.cacheSprites([ 
