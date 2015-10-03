@@ -1,0 +1,27 @@
+{
+
+	"port": 8080,
+	"host": "/",
+	"frames": 60,
+
+	"fontwidth": 0.68,
+	"fontheight": 0.8,
+	"linewidth": 2,
+	"strokecolor": "#ff0000",
+	"baseline": "middle",
+
+	"default": {
+
+		"velocity": 1,
+
+		"textfont": "Arial",
+		"textsize": 14,
+		"textcolor": "#fff",
+		"textstyle": "",
+		"align": "left",
+
+		"volume": 0.5
+
+	}
+
+}

@@ -1,0 +1,23 @@
+{
+	"name": "uranEngine",
+	"version": "2.0.0",
+	"description": "*",
+	"author": "Essle Jaxcate <essle.55@yandex.ru>",
+	"main": "index.js",
+	"private": true,
+	"engines": {
+		"node": "0.10.x",
+		"npm": "1.4.x"
+	},
+	"scripts": {
+		"start": "node game/script.js"
+	},
+	"dependencies": {
+		"socket.io": "*",
+		"http": "*",
+		"express": "*",
+		"jade": "*",
+		"performance-now": "*",
+		"xml2js": "*"
+	}
+}

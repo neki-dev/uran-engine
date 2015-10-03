@@ -1,3 +1,6 @@
+.CHANGDO
+/node_modules
 *.psd
-demo/*/local.html
-demo/mars/*
+*.eps
+*.js.source
+-save*

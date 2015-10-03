@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<scheme name="Undefined">
+
+	<screen>
+		<size>
+			<width>800</width>
+			<height>600</height>
+		</size>
+		<position>
+			<x>400</x>
+			<y>300</y>
+		</position>
+	</screen>
+
+	<map>
+		<title>Default scene</title>
+		<sprite></sprite>
+		<size>
+			<width>800</width>
+			<height>600</height>
+		</size>
+	</map>
+
+	<objects>
+	</objects>
+
+</scheme>

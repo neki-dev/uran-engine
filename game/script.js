@@ -1,0 +1,3 @@
+var $ = require('../engine/server/uranengine');
+
+// game code...
