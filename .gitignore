@@ -1,6 +1,7 @@
 .CHANGDO
 /node_modules
+/game/DEFAULT
+/game/PROCCESS
 *.psd
 *.eps
 *.js.source
--save*

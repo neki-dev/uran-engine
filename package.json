@@ -3,7 +3,7 @@
 	"version": "2.0.0",
 	"description": "*",
 	"author": "Essle Jaxcate <essle.55@yandex.ru>",
-	"main": "index.js",
+	"main": "game/script.js",
 	"private": true,
 	"engines": {
 		"node": "0.10.x",
