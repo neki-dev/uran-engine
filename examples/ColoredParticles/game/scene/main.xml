@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<scheme name="ecs">
+
+	<screen>
+		<size>
+			<width>1280</width>
+			<height>1024</height>
+		</size>
+		<position>
+			<x>640</x>
+			<y>512</y>
+		</position>
+	</screen>
+
+	<map>
+		<title></title>
+		<sprite>background.png</sprite>
+		<size>
+			<width>1280</width>
+			<height>1024</height>
+		</size>
+	</map>
+
+	<objects>
+	</objects>
+
+</scheme>
